@@ -8,7 +8,7 @@ It is a work in progress so some functionality is not implemented yet.
 
 ##What it can do?
 
-id3v2lib can read and edit id3 v2.3 and v2.4 tags from mp3 files. It can read and edit a small subset of tags by default. Specifically, the most used tags:
+id3v2lib can read and edit id3 v2.2, v2.3 and v2.4 tags from mp3 files. It can read and edit a small subset of tags by default. Specifically, the most used tags:
 
 * Title
 * Album
