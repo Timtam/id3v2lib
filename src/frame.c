@@ -82,9 +82,8 @@ ID3v2_frame_text_content* parse_text_frame_content(ID3v2_frame* frame)
     content = new_text_content();
     content->encoding = frame->data[0];
 
-    if(frame->major_version==ID3v22 && content->encoding==UTF_16_ENCODING_WITH_BOM)
-      // this isn't correct, the UTF_16_ENCODING_WITH_BOM flag in v22 actually means UCS-2 encoding
-      content->encoding = UCS_2_ENCODING;
+    if(content->encoding==UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data+ID3_FRAME_ENCODING))
+      content->encoding = UTF_16_ENCODING_WITHOUT_BOM;
 
     content->size = frame->size - ID3_FRAME_ENCODING;
     content->data=frame->data + ID3_FRAME_ENCODING;
@@ -103,8 +102,8 @@ ID3v2_frame_comment_content* parse_comment_frame_content(ID3v2_frame* frame)
     
     content->text->encoding = frame->data[0];
 
-    if(frame->major_version==ID3v22 && content->text->encoding==UTF_16_ENCODING_WITH_BOM)
-      content->text->encoding = UCS_2_ENCODING;
+    if(content->text->encoding==UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data+ID3_FRAME_ENCODING+ID3_FRAME_LANGUAGE))
+      content->text->encoding = UTF_16_ENCODING_WITHOUT_BOM;
 
     content->text->size = frame->size - ID3_FRAME_ENCODING - ID3_FRAME_LANGUAGE - ID3_FRAME_SHORT_DESCRIPTION;
     memcpy(content->language, frame->data + ID3_FRAME_ENCODING, ID3_FRAME_LANGUAGE);
@@ -141,15 +140,15 @@ ID3v2_frame_apic_content* parse_apic_frame_content(ID3v2_frame* frame)
     
     content->encoding = frame->data[0];
 
-    if(frame->major_version==ID3v22 && content->encoding==UTF_16_ENCODING_WITH_BOM)
-      content->encoding = UCS_2_ENCODING;
-    
     content->mime_type = parse_mime_type(frame->data, &i);
     content->picture_type = frame->data[++i];
-    content->description = &frame->data[++i];
+    content->description = frame->data[++i];
 
-    if (content->encoding == UTF_16_ENCODING_WITH_BOM || content->encoding == UTF_16_ENCODING_WITHOUT_BOM || content->encoding == UCS_2_ENCODING ) {
-            /* skip UTF-16 / UCS-2 description */
+    if(content->encoding==UTF_16_ENCODING_WITH_BOM && !has_boom(content->description))
+      content->encoding = UTF_16_ENCODING_WITHOUT_BOM;
+
+    if (content->encoding == UTF_16_ENCODING_WITH_BOM ) {
+            /* skip UTF-16 description */
             for ( ; * (uint16_t *) (frame->data + i); i += 2);
             i += 2;
     }

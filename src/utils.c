@@ -104,7 +104,7 @@ char* get_mime_type_from_filename(const char* filename)
 }
 
 // String functions
-int has_bom(uint16_t* string)
+int has_bom(char *string)
 {
     if(memcmp("\xFF\xFE", string, 2) == 0 || memcmp("\xFE\xFF", string, 2) == 0)
     {   

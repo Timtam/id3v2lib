@@ -46,10 +46,9 @@
 #define APIC_FRAME 3
 
 #define ISO_ENCODING 0 // supported in all tags
-#define UTF_16_ENCODING_WITH_BOM 1 // in v23 and 24
-#define UTF_16_ENCODING_WITHOUT_BOM 2 // v24 only
+#define UTF_16_ENCODING_WITH_BOM 1 // in all tags possible
+#define UTF_16_ENCODING_WITHOUT_BOM 2 // in all tags possible
 #define UTF_8_ENCODING 3 // v24 only
-#define UCS_2_ENCODING 4 // v22 only
  
 // END TAG_FRAME CONSTANTS
 
