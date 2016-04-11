@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "types.h"
+#include "id3v2lib.h"
 
 ID3v2_tag* new_tag()
 {
@@ -54,18 +54,16 @@ ID3v2_frame_list* new_frame_list()
     return list;
 }
 
-ID3v2_frame_text_content* new_text_content(int size)
+ID3v2_frame_text_content* new_text_content()
 {
     ID3v2_frame_text_content* content = (ID3v2_frame_text_content*) malloc(sizeof(ID3v2_frame_text_content));
-    content->data = (char*) malloc(size * sizeof(char));
     return content;
 }
 
-ID3v2_frame_comment_content* new_comment_content(int size)
+ID3v2_frame_comment_content* new_comment_content()
 {
     ID3v2_frame_comment_content* content = (ID3v2_frame_comment_content*) malloc(sizeof(ID3v2_frame_comment_content));
-    content->text = new_text_content(size - ID3_FRAME_SHORT_DESCRIPTION - ID3_FRAME_LANGUAGE);
-    content->language = (char*) malloc(ID3_FRAME_LANGUAGE + sizeof(char));
+    content->text = new_text_content();
     return content;
 }
 

@@ -11,9 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "frame.h"
-#include "utils.h"
-#include "constants.h"
+#include "id3v2lib.h"
 
 ID3v2_frame* parse_frame(char* bytes, int offset, int version)
 {
@@ -56,6 +54,10 @@ ID3v2_frame* parse_frame(char* bytes, int offset, int version)
 
 int get_frame_type(char* frame_id)
 {
+    // some exceptions, for example...
+    if(strcmp(frame_id, "PIC\0")==0) // not called APIC in v22, but PIC instead
+      return APIC_FRAME;
+
     switch(frame_id[0])
     {
         case 'T':
@@ -77,7 +79,7 @@ ID3v2_frame_text_content* parse_text_frame_content(ID3v2_frame* frame)
         return NULL;
     }
     
-    content = new_text_content(frame->size);
+    content = new_text_content();
     content->encoding = frame->data[0];
 
     if(frame->major_version==ID3v22 && content->encoding==UTF_16_ENCODING_WITH_BOM)
@@ -85,7 +87,7 @@ ID3v2_frame_text_content* parse_text_frame_content(ID3v2_frame* frame)
       content->encoding = UCS_2_ENCODING;
 
     content->size = frame->size - ID3_FRAME_ENCODING;
-    memcpy(content->data, frame->data + ID3_FRAME_ENCODING, content->size);
+    content->data=frame->data + ID3_FRAME_ENCODING;
     return content;
 }
 
@@ -97,13 +99,17 @@ ID3v2_frame_comment_content* parse_comment_frame_content(ID3v2_frame* frame)
         return NULL;
     }
     
-    content = new_comment_content(frame->size);
+    content = new_comment_content();
     
     content->text->encoding = frame->data[0];
+
+    if(frame->major_version==ID3v22 && content->text->encoding==UTF_16_ENCODING_WITH_BOM)
+      content->text->encoding = UCS_2_ENCODING;
+
     content->text->size = frame->size - ID3_FRAME_ENCODING - ID3_FRAME_LANGUAGE - ID3_FRAME_SHORT_DESCRIPTION;
     memcpy(content->language, frame->data + ID3_FRAME_ENCODING, ID3_FRAME_LANGUAGE);
-    content->short_description = "\0"; // Ignore short description
-    memcpy(content->text->data, frame->data + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE + 1, content->text->size);
+    content->short_description[0] = '\0'; // Ignore short description
+    content->text->data=frame->data + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE + 1;
     
     return content;
 }
@@ -134,13 +140,16 @@ ID3v2_frame_apic_content* parse_apic_frame_content(ID3v2_frame* frame)
     content = new_apic_content();
     
     content->encoding = frame->data[0];
+
+    if(frame->major_version==ID3v22 && content->encoding==UTF_16_ENCODING_WITH_BOM)
+      content->encoding = UCS_2_ENCODING;
     
     content->mime_type = parse_mime_type(frame->data, &i);
     content->picture_type = frame->data[++i];
     content->description = &frame->data[++i];
 
-    if (content->encoding == 0x01 || content->encoding == 0x02) {
-            /* skip UTF-16 description */
+    if (content->encoding == UTF_16_ENCODING_WITH_BOM || content->encoding == UTF_16_ENCODING_WITHOUT_BOM || content->encoding == UCS_2_ENCODING ) {
+            /* skip UTF-16 / UCS-2 description */
             for ( ; * (uint16_t *) (frame->data + i); i += 2);
             i += 2;
     }
@@ -151,8 +160,7 @@ ID3v2_frame_apic_content* parse_apic_frame_content(ID3v2_frame* frame)
     }
   
     content->picture_size = frame->size - i;
-    content->data = (char*) malloc(content->picture_size);
-    memcpy(content->data, frame->data + i, content->picture_size);
+    content->data= frame->data + i;
     
     return content;
 }

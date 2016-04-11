@@ -32,8 +32,8 @@ typedef struct
 
 typedef struct
 {
-    char* language;
-    char* short_description;
+    char language[ID3_FRAME_LANGUAGE];
+    char short_description[ID3_FRAME_SHORT_DESCRIPTION];
     ID3v2_frame_text_content* text;
 } ID3v2_frame_comment_content;
 
@@ -76,8 +76,8 @@ ID3v2_header* new_header();
 ID3v2_tag* new_tag();
 ID3v2_frame* new_frame();
 ID3v2_frame_list* new_frame_list();
-ID3v2_frame_text_content* new_text_content(int size);
-ID3v2_frame_comment_content* new_comment_content(int size);
+ID3v2_frame_text_content* new_text_content();
+ID3v2_frame_comment_content* new_comment_content();
 ID3v2_frame_apic_content* new_apic_content();
 
 #endif

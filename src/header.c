@@ -11,8 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "header.h"
-#include "utils.h"
+#include "id3v2lib.h"
 
 int has_id3v2tag(ID3v2_header* tag_header)
 {

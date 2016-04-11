@@ -13,7 +13,6 @@
 
 #include "id3v2lib.h"
 
-
 ID3v2_tag* load_tag(const char* file_name)
 {
     char *buffer;
@@ -122,14 +121,14 @@ void remove_tag(const char* file_name)
     FILE* temp_file;
     ID3v2_header* tag_header;
 
-    file = fopen(file_name, "r+b");
-    temp_file = tmpfile();
-
     tag_header = get_tag_header(file_name);
     if(tag_header == NULL)
     {
         return;
     }
+
+    file=fopen(file_name, "rb");
+    temp_file = tmpfile();
 
     fseek(file, tag_header->tag_size + 10, SEEK_SET);
     while((c = getc(file)) != EOF)
@@ -139,11 +138,18 @@ void remove_tag(const char* file_name)
 
     // Write temp file data back to original file
     fseek(temp_file, 0, SEEK_SET);
-    fseek(file, 0, SEEK_SET);
+    // we need to open file new since it is readonly for now
+    fclose(file);
+    file=fopen(file_name, "wb");
+
     while((c = getc(temp_file)) != EOF)
     {
         putc(c, file);
     }
+
+    fclose(file);
+    fclose(temp_file);
+
 }
 
 void write_header(ID3v2_header* tag_header, FILE* file)
@@ -157,9 +163,10 @@ void write_header(ID3v2_header* tag_header, FILE* file)
 
 void write_frame(ID3v2_frame* frame, FILE* file)
 {
-    fwrite(frame->frame_id, 1, 4, file);
-    fwrite(itob(frame->size), 1, 4, file);
-    fwrite(frame->flags, 1, 2, file);
+    fwrite(frame->frame_id, 1, (frame->major_version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_SIZE), file);
+    fwrite(itob(frame->size), 1, (frame->major_version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_SIZE), file);
+    if(frame->major_version!=ID3v22)
+      fwrite(frame->flags, 1, 2, file);
     fwrite(frame->data, 1, frame->size, file);
 }
 
@@ -176,7 +183,7 @@ int get_tag_size(ID3v2_tag* tag)
     frame_list = tag->frames->start;
     while(frame_list != NULL)
     {
-        size += frame_list->frame->size + 10;
+        size += frame_list->frame->size + (frame_list->frame->major_version==ID3v22 ? 6 : 10);
         frame_list = frame_list->next;
     }
 
