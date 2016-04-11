@@ -164,3 +164,50 @@ ID3v2_frame_apic_content* parse_apic_frame_content(ID3v2_frame* frame)
     
     return content;
 }
+
+void add_frame(ID3v2_tag *tag, ID3v2_frame *frame)
+{
+  ID3v2_frame *last_frame;
+
+  if(tag->frame == NULL)
+  {
+    tag->frame = frame;
+    return;
+  }
+
+  last_frame = tag->frame;
+  while(last_frame->next != NULL)
+    last_frame=last_frame->next;
+
+  last_frame->next = frame;
+
+}
+
+ID3v2_frame *get_frame(ID3v2_tag *tag, char *frame_id)
+{
+  char tmp_id[ID3_FRAME_ID];
+  ID3v2_frame *matching_frame;
+
+  if(tag->frame == NULL)
+    // no frames in tag, return nothing
+    return NULL;
+
+  matching_frame = tag->frame;
+
+  while(matching_frame != NULL)
+  {
+    // we will copy the id here so we can adjust it if necessary
+    memcpy(tmp_id, frame_id, ID3_FRAME_ID);
+
+    if(matching_frame->major_version==ID3v22)
+      // since id3 v22 only has 3-byte identifiers, we will replace the fourth sign (if available) with the empty sign
+      tmp_id[3]='\0';
+
+    if(memcmp(matching_frame->frame_id, tmp_id, 4)==0)
+      break; 
+
+    matching_frame = matching_frame->next;
+  }
+
+  return matching_frame;
+}

@@ -73,53 +73,21 @@ int syncint_decode(int value)
     return result;
 }
 
-void add_to_list(ID3v2_frame_list* main, ID3v2_frame* frame)
-{
-    ID3v2_frame_list *current;
-
-    // if empty list
-    if(main->start == NULL)
-    {
-        main->start = main;
-        main->last = main;
-        main->frame = frame;
-    }
-    else
-    {
-        current = new_frame_list();
-        current->frame = frame;
-        current->start = main->start;
-        main->last->next = current;
-        main->last = current;
-    }
-}
-
-ID3v2_frame* get_from_list(ID3v2_frame_list* list, char* frame_id)
-{
-    while(list != NULL && list->frame != NULL)
-    {
-        if(strncmp(list->frame->frame_id, frame_id, 4) == 0) {
-            return list->frame;
-        }
-        list = list->next;
-    }
-    return NULL;
-}
-
 void free_tag(ID3v2_tag* tag)
 {
-    ID3v2_frame_list *list;
+    ID3v2_frame *frame;
+    ID3v2_frame *next_frame;
 
     free(tag->raw);
     free(tag->tag_header);
-    list = tag->frames;
-    while(list != NULL)
+    frame = tag->frame;
+    while(frame != NULL)
     {
-        if (list->frame) free(list->frame->data);
-        free(list->frame);
-        list = list->next;
+        free(frame->data);
+        next_frame = frame->next;
+        free(frame);
+        frame=next_frame;
     }
-    free(list);
     free(tag);
 }
 
