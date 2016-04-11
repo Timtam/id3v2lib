@@ -103,7 +103,7 @@ ID3v2_tag* load_tag_with_buffer(char *bytes, int length)
 
         if(frame != NULL)
         {
-            offset += frame->size + 10;
+            offset += frame->size + (get_tag_version(tag_header) == ID3v22 ? 6 : 10);
             add_to_list(tag->frames, frame);
         }
         else
@@ -255,7 +255,7 @@ ID3v2_frame* tag_get_title(ID3v2_tag* tag)
         return NULL;
     }
 
-    return get_from_list(tag->frames, "TIT2");
+    return get_from_list(tag->frames, TITLE_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
 ID3v2_frame* tag_get_artist(ID3v2_tag* tag)
@@ -265,7 +265,7 @@ ID3v2_frame* tag_get_artist(ID3v2_tag* tag)
         return NULL;
     }
 
-    return get_from_list(tag->frames, "TPE1");
+    return get_from_list(tag->frames, ARTIST_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
 ID3v2_frame* tag_get_album(ID3v2_tag* tag)
@@ -275,7 +275,7 @@ ID3v2_frame* tag_get_album(ID3v2_tag* tag)
         return NULL;
     }
 
-    return get_from_list(tag->frames, "TALB");
+    return get_from_list(tag->frames, ALBUM_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
 ID3v2_frame* tag_get_album_artist(ID3v2_tag* tag)
@@ -285,7 +285,7 @@ ID3v2_frame* tag_get_album_artist(ID3v2_tag* tag)
         return NULL;
     }
 
-    return get_from_list(tag->frames, "TPE2");
+    return get_from_list(tag->frames, ALBUM_ARTIST_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
 ID3v2_frame* tag_get_genre(ID3v2_tag* tag)
@@ -295,7 +295,7 @@ ID3v2_frame* tag_get_genre(ID3v2_tag* tag)
         return NULL;
     }
 
-    return get_from_list(tag->frames, "TCON");
+    return get_from_list(tag->frames, GENRE_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
 ID3v2_frame* tag_get_track(ID3v2_tag* tag)
@@ -305,7 +305,7 @@ ID3v2_frame* tag_get_track(ID3v2_tag* tag)
         return NULL;
     }
 
-    return get_from_list(tag->frames, "TRCK");
+    return get_from_list(tag->frames, TRACK_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
 ID3v2_frame* tag_get_year(ID3v2_tag* tag)
@@ -315,7 +315,7 @@ ID3v2_frame* tag_get_year(ID3v2_tag* tag)
         return NULL;
     }
 
-    return get_from_list(tag->frames, "TYER");
+    return get_from_list(tag->frames, YEAR_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
 ID3v2_frame* tag_get_comment(ID3v2_tag* tag)
@@ -325,7 +325,7 @@ ID3v2_frame* tag_get_comment(ID3v2_tag* tag)
         return NULL;
     }
 
-    return get_from_list(tag->frames, "COMM");
+    return get_from_list(tag->frames, COMMENT_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
 ID3v2_frame* tag_get_disc_number(ID3v2_tag* tag)
@@ -335,7 +335,7 @@ ID3v2_frame* tag_get_disc_number(ID3v2_tag* tag)
         return NULL;
     }
 
-    return get_from_list(tag->frames, "TPOS");
+    return get_from_list(tag->frames, DISC_NUMBER_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
 ID3v2_frame* tag_get_composer(ID3v2_tag* tag)
@@ -345,7 +345,7 @@ ID3v2_frame* tag_get_composer(ID3v2_tag* tag)
         return NULL;
     }
 
-    return get_from_list(tag->frames, "TCOM");
+    return get_from_list(tag->frames, COMPOSER_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
 ID3v2_frame* tag_get_album_cover(ID3v2_tag* tag)
@@ -355,7 +355,7 @@ ID3v2_frame* tag_get_album_cover(ID3v2_tag* tag)
         return NULL;
     }
 
-    return get_from_list(tag->frames, "APIC");
+    return get_from_list(tag->frames, ALBUM_COVER_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
 /**
@@ -363,55 +363,39 @@ ID3v2_frame* tag_get_album_cover(ID3v2_tag* tag)
  */
 void set_text_frame(char* data, char encoding, char* frame_id, ID3v2_frame* frame)
 {
-    char *frame_data;
     // Set frame id and size
     memcpy(frame->frame_id, frame_id, 4);
     frame->size = 1 + (int) strlen(data);
 
     // Set frame data
     // TODO: Make the encoding param relevant.
-    frame_data = (char*) malloc(frame->size * sizeof(char));
     frame->data = (char*) malloc(frame->size * sizeof(char));
 
-    sprintf(frame_data, "%c%s", encoding, data);
-    memcpy(frame->data, frame_data, frame->size);
-
-    free(frame_data);
+    sprintf(frame->data, "%c%s", encoding, data);
 }
 
 void set_comment_frame(char* data, char encoding, ID3v2_frame* frame)
 {
-    char *frame_data;
-
-    memcpy(frame->frame_id, COMMENT_FRAME_ID, 4);
+    memcpy(frame->frame_id, COMMENT_FRAME_ID(frame->major_version), 4);
     frame->size = 1 + 3 + 1 + (int) strlen(data); // encoding + language + description + comment
 
-    frame_data = (char*) malloc(frame->size * sizeof(char));
     frame->data = (char*) malloc(frame->size * sizeof(char));
 
-    sprintf(frame_data, "%c%s%c%s", encoding, "eng", '\x00', data);
-    memcpy(frame->data, frame_data, frame->size);
-
-    free(frame_data);
+    sprintf(frame->data, "%c%s%c%s", encoding, "eng", '\x00', data);
 }
 
 void set_album_cover_frame(char* album_cover_bytes, char* mimetype, int picture_size, ID3v2_frame* frame)
 {
-    char *frame_data;
     int offset;
 
-    memcpy(frame->frame_id, ALBUM_COVER_FRAME_ID, 4);
+    memcpy(frame->frame_id, ALBUM_COVER_FRAME_ID(frame->major_version), 4);
     frame->size = 1 + (int) strlen(mimetype) + 1 + 1 + 1 + picture_size; // encoding + mimetype + 00 + type + description + picture
 
-    frame_data = (char*) malloc(frame->size * sizeof(char));
     frame->data = (char*) malloc(frame->size * sizeof(char));
 
     offset = 1 + (int) strlen(mimetype) + 1 + 1 + 1;
-    sprintf(frame_data, "%c%s%c%c%c", '\x00', mimetype, '\x00', FRONT_COVER, '\x00');
-    memcpy(frame->data, frame_data, offset);
+    sprintf(frame->data, "%c%s%c%c%c", '\x00', mimetype, '\x00', FRONT_COVER, '\x00');
     memcpy(frame->data + offset, album_cover_bytes, picture_size);
-
-    free(frame_data);
 }
 
 void tag_set_title(char* title, char encoding, ID3v2_tag* tag)
@@ -423,7 +407,7 @@ void tag_set_title(char* title, char encoding, ID3v2_tag* tag)
         add_to_list(tag->frames, title_frame);
     }
 
-    set_text_frame(title, encoding, TITLE_FRAME_ID, title_frame);
+    set_text_frame(title, encoding, TITLE_FRAME_ID(get_tag_version(tag->tag_header)), title_frame);
 }
 
 void tag_set_artist(char* artist, char encoding, ID3v2_tag* tag)
@@ -435,7 +419,7 @@ void tag_set_artist(char* artist, char encoding, ID3v2_tag* tag)
         add_to_list(tag->frames, artist_frame);
     }
 
-    set_text_frame(artist, encoding, ARTIST_FRAME_ID, artist_frame);
+    set_text_frame(artist, encoding, ARTIST_FRAME_ID(get_tag_version(tag->tag_header)), artist_frame);
 }
 
 void tag_set_album(char* album, char encoding, ID3v2_tag* tag)
@@ -447,7 +431,7 @@ void tag_set_album(char* album, char encoding, ID3v2_tag* tag)
         add_to_list(tag->frames, album_frame);
     }
 
-    set_text_frame(album, encoding, ALBUM_FRAME_ID, album_frame);
+    set_text_frame(album, encoding, ALBUM_FRAME_ID(get_tag_version(tag->tag_header)), album_frame);
 }
 
 void tag_set_album_artist(char* album_artist, char encoding, ID3v2_tag* tag)
@@ -459,7 +443,7 @@ void tag_set_album_artist(char* album_artist, char encoding, ID3v2_tag* tag)
         add_to_list(tag->frames, album_artist_frame);
     }
 
-    set_text_frame(album_artist, encoding, ALBUM_ARTIST_FRAME_ID, album_artist_frame);
+    set_text_frame(album_artist, encoding, ALBUM_ARTIST_FRAME_ID(get_tag_version(tag->tag_header)), album_artist_frame);
 }
 
 void tag_set_genre(char* genre, char encoding, ID3v2_tag* tag)
@@ -471,7 +455,7 @@ void tag_set_genre(char* genre, char encoding, ID3v2_tag* tag)
         add_to_list(tag->frames, genre_frame);
     }
 
-    set_text_frame(genre, encoding, GENRE_FRAME_ID, genre_frame);
+    set_text_frame(genre, encoding, GENRE_FRAME_ID(get_tag_version(tag->tag_header)), genre_frame);
 }
 
 void tag_set_track(char* track, char encoding, ID3v2_tag* tag)
@@ -483,7 +467,7 @@ void tag_set_track(char* track, char encoding, ID3v2_tag* tag)
         add_to_list(tag->frames, track_frame);
     }
 
-    set_text_frame(track, encoding, TRACK_FRAME_ID, track_frame);
+    set_text_frame(track, encoding, TRACK_FRAME_ID(get_tag_version(tag->tag_header)), track_frame);
 }
 
 void tag_set_year(char* year, char encoding, ID3v2_tag* tag)
@@ -495,7 +479,7 @@ void tag_set_year(char* year, char encoding, ID3v2_tag* tag)
         add_to_list(tag->frames, year_frame);
     }
 
-    set_text_frame(year, encoding, YEAR_FRAME_ID, year_frame);
+    set_text_frame(year, encoding, YEAR_FRAME_ID(get_tag_version(tag->tag_header)), year_frame);
 }
 
 void tag_set_comment(char* comment, char encoding, ID3v2_tag* tag)
@@ -519,7 +503,7 @@ void tag_set_disc_number(char* disc_number, char encoding, ID3v2_tag* tag)
         add_to_list(tag->frames, disc_number_frame);
     }
 
-    set_text_frame(disc_number, encoding, DISC_NUMBER_FRAME_ID, disc_number_frame);
+    set_text_frame(disc_number, encoding, DISC_NUMBER_FRAME_ID(get_tag_version(tag->tag_header)), disc_number_frame);
 }
 
 void tag_set_composer(char* composer, char encoding, ID3v2_tag* tag)
@@ -531,7 +515,7 @@ void tag_set_composer(char* composer, char encoding, ID3v2_tag* tag)
         add_to_list(tag->frames, composer_frame);
     }
 
-    set_text_frame(composer, encoding, COMPOSER_FRAME_ID, composer_frame);
+    set_text_frame(composer, encoding, COMPOSER_FRAME_ID(get_tag_version(tag->tag_header)), composer_frame);
 }
 
 void tag_set_album_cover(const char* filename, ID3v2_tag* tag)

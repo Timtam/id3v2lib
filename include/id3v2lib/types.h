@@ -52,6 +52,7 @@ typedef struct
     char frame_id[ID3_FRAME_ID];
     int size;
     char flags[ID3_FRAME_FLAGS];
+    int major_version; // needed to identify the tag version this frame is related too
     char* data;
 } ID3v2_frame;
 

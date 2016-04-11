@@ -22,16 +22,19 @@
 #define ID3_EXTENDED_HEADER_SIZE 4
 
 #define NO_COMPATIBLE_TAG 0
-#define ID3v23  1
-#define ID3v24  2
+#define ID3v22  2
+#define ID3v23  3
+#define ID3v24  4
 // END TAG_HEADER CONSTANTS
 
 /**
  * TAG_FRAME CONSTANTS
  */
 #define ID3_FRAME 10
-#define ID3_FRAME_ID 4
-#define ID3_FRAME_SIZE 4
+#define ID3_FRAME_ID 4 // for id3v23 and 24
+#define ID3_FRAME_ID2 3 // for id3v22
+#define ID3_FRAME_SIZE 4 // for id3v23 and 24
+#define ID3_FRAME_SIZE2 3 // for id3v22
 #define ID3_FRAME_FLAGS 2
 #define ID3_FRAME_ENCODING 1
 #define ID3_FRAME_LANGUAGE 3
@@ -42,24 +45,29 @@
 #define COMMENT_FRAME 2
 #define APIC_FRAME 3
 
-#define ISO_ENCODING 0
-#define UTF_16_ENCODING 1
+#define ISO_ENCODING 0 // supported in all tags
+#define UTF_16_ENCODING_WITH_BOM 1 // in v23 and 24
+#define UTF_16_ENCODING_WITHOUT_BOM 2 // v24 only
+#define UTF_8_ENCODING 3 // v24 only
+#define UCS_2_ENCODING 4 // v22 only
+ 
 // END TAG_FRAME CONSTANTS
 
 /**
  * FRAME IDs
  */
-#define TITLE_FRAME_ID "TIT2"
-#define ARTIST_FRAME_ID "TPE1"
-#define ALBUM_FRAME_ID "TALB"
-#define ALBUM_ARTIST_FRAME_ID "TPE2"
-#define GENRE_FRAME_ID "TCON"
-#define TRACK_FRAME_ID "TRCK"
-#define YEAR_FRAME_ID "TYER"
-#define COMMENT_FRAME_ID "COMM"
-#define DISC_NUMBER_FRAME_ID "TPOS"
-#define COMPOSER_FRAME_ID "TCOM"
-#define ALBUM_COVER_FRAME_ID "APIC"
+#define DECIDE_FRAME(x,y,z) (x==ID3v22 ? y : z)
+#define TITLE_FRAME_ID(x) DECIDE_FRAME(x, "TT2\0", "TIT2")
+#define ARTIST_FRAME_ID(x) DECIDE_FRAME(x, "TP1\0", "TPE1")
+#define ALBUM_FRAME_ID(x) DECIDE_FRAME(x, "TAL\0", "TALB")
+#define ALBUM_ARTIST_FRAME_ID(x) DECIDE_FRAME(x, "TP2\0", "TPE2")
+#define GENRE_FRAME_ID(x) DECIDE_FRAME(x, "TCO\0", "TCON")
+#define TRACK_FRAME_ID(x) DECIDE_FRAME(x, "TRK\0", "TRCK")
+#define YEAR_FRAME_ID(x) DECIDE_FRAME(x, "TYE\0", "TYER")
+#define COMMENT_FRAME_ID(x) DECIDE_FRAME(x, "COM\0", "COMM")
+#define DISC_NUMBER_FRAME_ID(x) DECIDE_FRAME(x, "TPA\0", "TPOS")
+#define COMPOSER_FRAME_ID(x) DECIDE_FRAME(x, "TCM\0", "TCOM")
+#define ALBUM_COVER_FRAME_ID(x) DECIDE_FRAME(x, "PIC\0", "APIC")
 // END FRAME IDs
 
 

@@ -20,26 +20,37 @@ ID3v2_frame* parse_frame(char* bytes, int offset, int version)
     ID3v2_frame* frame = new_frame();
     
     // Parse frame header
-    memcpy(frame->frame_id, bytes + offset, ID3_FRAME_ID);
+    memcpy(frame->frame_id, bytes + offset, (version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_ID));
+
+    if(version==ID3v22)
+      // fill the remaining space with emptyness
+      frame->frame_id[3]='\0';
+
     // Check if we are into padding
-    if(memcmp(frame->frame_id, "\0\0\0\0", 4) == 0)
+    if(memcmp(frame->frame_id, "\0\0\0", 3) == 0)
     {
         free(frame);
         return NULL;
     }
 
-    frame->size = btoi(bytes, 4, offset += ID3_FRAME_ID);
+    frame->size = btoi(bytes, (version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_SIZE), offset += (version==ID3v22 ? ID3_FRAME_ID2 : ID3_FRAME_ID));
     if(version == ID3v24)
     {
         frame->size = syncint_decode(frame->size);
     }
 
-    memcpy(frame->flags, bytes + (offset += ID3_FRAME_SIZE), 2);
+    if(version != ID3v22) // flags are only available in v23 and 24 tags
+      memcpy(frame->flags, bytes + (offset += ID3_FRAME_SIZE), 2);
+    else
+      // just pushing the offset forward
+      offset += ID3_FRAME_SIZE2;
     
     // Load frame data
     frame->data = (char*) malloc(frame->size * sizeof(char));
-    memcpy(frame->data, bytes + (offset += ID3_FRAME_FLAGS), frame->size);
+    memcpy(frame->data, bytes + (offset += (version==ID3v22 ? 0 : ID3_FRAME_FLAGS)), frame->size);
     
+    frame->major_version = version;
+
     return frame;
 }
 
@@ -68,6 +79,11 @@ ID3v2_frame_text_content* parse_text_frame_content(ID3v2_frame* frame)
     
     content = new_text_content(frame->size);
     content->encoding = frame->data[0];
+
+    if(frame->major_version==ID3v22 && content->encoding==UTF_16_ENCODING_WITH_BOM)
+      // this isn't correct, the UTF_16_ENCODING_WITH_BOM flag in v22 actually means UCS-2 encoding
+      content->encoding = UCS_2_ENCODING;
+
     content->size = frame->size - ID3_FRAME_ENCODING;
     memcpy(content->data, frame->data + ID3_FRAME_ENCODING, content->size);
     return content;

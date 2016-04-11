@@ -92,6 +92,10 @@ int get_tag_version(ID3v2_header* tag_header)
     {
         return ID3v24;
     }
+    else if(tag_header->major_version == 2)
+    {
+      return ID3v22;
+    }
     else
     {
         return NO_COMPATIBLE_TAG;
