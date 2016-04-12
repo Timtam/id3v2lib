@@ -15,6 +15,7 @@
 
 void add_frame(ID3v2_tag *tag, ID3v2_frame *frame);
 ID3v2_frame *get_frame(ID3v2_tag *tag, char *frame_id);
+int get_mime_type_size(char *data);
 ID3v2_frame* parse_frame(char* bytes, int offset, int version);
 int get_frame_type(char* frame_id);
 ID3v2_frame_text_content* parse_text_frame_content(ID3v2_frame* frame);

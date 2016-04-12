@@ -145,23 +145,22 @@ ID3v2_frame_comment_content* parse_comment_frame_content(ID3v2_frame* frame)
     return content;
 }
 
-char* parse_mime_type(char* data, int* i)
+int get_mime_type_size(char* data)
 {
-    char* mime_type = (char*) malloc(30 * sizeof(char));
-    
-    while(data[*i] != '\0')
+    int i =0;
+
+    while(data[i] != '\0')
     {
-        mime_type[*i - 1] = data[*i];
-        (*i)++;
+        i++;
     }
     
-    return mime_type;
+    return i;
 }
 
 ID3v2_frame_apic_content* parse_apic_frame_content(ID3v2_frame* frame)
 {
     ID3v2_frame_apic_content *content;
-    int i = 1; // Skip ID3_FRAME_ENCODING
+    int offset = 1; // Skip ID3_FRAME_ENCODING
 
     if(frame == NULL)
     {
@@ -172,26 +171,49 @@ ID3v2_frame_apic_content* parse_apic_frame_content(ID3v2_frame* frame)
     
     content->encoding = frame->data[0];
 
-    content->mime_type = parse_mime_type(frame->data, &i);
-    content->picture_type = frame->data[++i];
-    content->description = frame->data+ ++i;
-
     if(content->encoding==UTF_16_ENCODING_WITH_BOM && !has_bom(content->description))
       content->encoding = UTF_16_ENCODING_WITHOUT_BOM;
 
-    if (content->encoding == UTF_16_ENCODING_WITH_BOM ) {
-            /* skip UTF-16 description */
-            for ( ; * (uint16_t *) (frame->data + i); i += 2);
-            i += 2;
+    content->mime_type = frame->data+offset;
+
+    if(frame->major_version==ID3v22)
+    {
+      // id3 v2.2 mime types are always (!) exactly 3 bytes long, without the terminator
+      content->mime_type_size = 3;
     }
-    else {
-            /* skip UTF-8 or Latin-1 description */
-            for ( ; frame->data[i] != '\0'; i++);
-            i += 1;
+    else
+    {
+      content->mime_type_size=get_mime_type_size(content->mime_type);
     }
+
+    offset += content->mime_type_size;
+
+    content->picture_type = frame->data[++offset];
+
+    content->description = frame->data+ ++offset;
+
+    if (content->encoding == UTF_16_ENCODING_WITH_BOM || content->encoding==UTF_16_ENCODING_WITHOUT_BOM)
+    {
+      /* skip UTF-16 description */
+      // a bit more understandable:
+      // as long as we don't get the \0\0 end, we skip forward
+      for ( ; memcmp(frame->data+offset, "\0\0", 2)!=0; offset += 2);
+      offset += 2;
+
+    }
+    else
+    {
+      /* skip UTF-8 or Latin-1 description */
+      for ( ; frame->data[offset] != '\0'; offset++);
+      offset += 1;
+    }
+
+    // calculating the description length
+    // a mixture of pointer and integer division/addition
+    content->description_size=((frame->data + offset) - content->mime_type) - content->mime_type_size -1;
   
-    content->picture_size = frame->size - i;
-    content->data= frame->data + i;
+    content->picture_size = frame->size - offset;
+    content->data= frame->data + offset;
     
     return content;
 }

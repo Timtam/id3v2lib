@@ -43,8 +43,10 @@ typedef struct
 {
     char encoding;
     char* mime_type;
+    int mime_type_size;
     char picture_type;
     char* description;
+    int description_size;
     int picture_size;
     char* data;
 } ID3v2_frame_apic_content;
