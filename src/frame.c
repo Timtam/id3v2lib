@@ -16,6 +16,7 @@
 ID3v2_frame* parse_frame(char* bytes, int offset, int version)
 {
     ID3v2_frame* frame = new_frame();
+    char tmp[2];
     
     // Parse frame header
     memcpy(frame->frame_id, bytes + offset, (version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_ID));
@@ -38,14 +39,29 @@ ID3v2_frame* parse_frame(char* bytes, int offset, int version)
     }
 
     if(version != ID3v22) // flags are only available in v23 and 24 tags
+    {
       memcpy(frame->flags, bytes + (offset += ID3_FRAME_SIZE), 2);
+      offset += ID3_FRAME_FLAGS;
+    }
     else
       // just pushing the offset forward
       offset += ID3_FRAME_SIZE2;
     
     // Load frame data
     frame->data = (char*) malloc(frame->size * sizeof(char));
-    memcpy(frame->data, bytes + (offset += (version==ID3v22 ? 0 : ID3_FRAME_FLAGS)), frame->size);
+
+    if(get_frame_type(frame->frame_id)==COMMENT_FRAME)
+    {
+      // in this case we need to copy the short descriptor first, then the encoding and then the rest
+      if(has_bom(bytes + offset + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE))
+      {
+        memcpy(tmp, bytes + offset + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE + 2, 2);
+        memmove(bytes + offset + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE + 2, bytes + offset + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE, 2);
+        memcpy(bytes + offset + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE, tmp, 2);
+      }
+    }
+      
+    memcpy(frame->data, bytes + offset, frame->size);
     
     frame->major_version = version;
 
@@ -93,6 +109,8 @@ ID3v2_frame_text_content* parse_text_frame_content(ID3v2_frame* frame)
 ID3v2_frame_comment_content* parse_comment_frame_content(ID3v2_frame* frame)
 {
     ID3v2_frame_comment_content *content;
+    int offset = 0;
+
     if(frame == NULL)
     {
         return NULL;
@@ -101,14 +119,28 @@ ID3v2_frame_comment_content* parse_comment_frame_content(ID3v2_frame* frame)
     content = new_comment_content();
     
     content->text->encoding = frame->data[0];
+    offset += ID3_FRAME_ENCODING;
 
-    if(content->text->encoding==UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data+ID3_FRAME_ENCODING+ID3_FRAME_LANGUAGE))
-      content->text->encoding = UTF_16_ENCODING_WITHOUT_BOM;
+    memcpy(content->language, frame->data + offset, ID3_FRAME_LANGUAGE);
+    offset += ID3_FRAME_LANGUAGE;
 
-    content->text->size = frame->size - ID3_FRAME_ENCODING - ID3_FRAME_LANGUAGE - ID3_FRAME_SHORT_DESCRIPTION;
-    memcpy(content->language, frame->data + ID3_FRAME_ENCODING, ID3_FRAME_LANGUAGE);
-    content->short_description[0] = '\0'; // Ignore short description
-    content->text->data=frame->data + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE + 1;
+    if(content->text->encoding==ISO_ENCODING || content->text->encoding == UTF_8_ENCODING)
+    {
+      content->short_description[0]=(frame->data)[offset];
+      content->short_description[1]='\0';
+      offset += 1;
+    }
+    else
+    {
+      memcpy(content->short_description, frame->data+offset, 2);
+      offset += 2;
+      if(content->text->encoding==UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data+offset))
+        content->text->encoding=UTF_16_ENCODING_WITHOUT_BOM;
+    }
+
+    content->text->size = frame->size - offset;
+
+    content->text->data=frame->data + offset;
     
     return content;
 }
@@ -142,9 +174,9 @@ ID3v2_frame_apic_content* parse_apic_frame_content(ID3v2_frame* frame)
 
     content->mime_type = parse_mime_type(frame->data, &i);
     content->picture_type = frame->data[++i];
-    content->description = frame->data[++i];
+    content->description = frame->data+ ++i;
 
-    if(content->encoding==UTF_16_ENCODING_WITH_BOM && !has_boom(content->description))
+    if(content->encoding==UTF_16_ENCODING_WITH_BOM && !has_bom(content->description))
       content->encoding = UTF_16_ENCODING_WITHOUT_BOM;
 
     if (content->encoding == UTF_16_ENCODING_WITH_BOM ) {

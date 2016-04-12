@@ -35,7 +35,7 @@ typedef struct
 typedef struct
 {
     char language[ID3_FRAME_LANGUAGE];
-    char short_description[ID3_FRAME_SHORT_DESCRIPTION];
+    char short_description[2];
     ID3v2_frame_text_content* text;
 } ID3v2_frame_comment_content;
 
