@@ -98,7 +98,7 @@ ID3v2_tag* load_tag_with_buffer(char *bytes, int length)
 
     while(offset < tag_header->tag_size)
     {
-        frame = parse_frame(tag->raw, offset, get_tag_version(tag_header));
+        frame = parse_frame(tag, offset);
 
         if(frame != NULL)
         {

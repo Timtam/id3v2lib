@@ -13,10 +13,13 @@
 
 #include "id3v2lib.h"
 
-ID3v2_frame* parse_frame(char* bytes, int offset, int version)
+ID3v2_frame* parse_frame(ID3v2_tag *tag, int offset)
 {
+    char *bytes=tag->raw;
     ID3v2_frame* frame = new_frame();
     char tmp[2];
+    char unsynchronisation = 0;
+    int version = get_tag_version(tag->tag_header);
     
     // Parse frame header
     memcpy(frame->frame_id, bytes + offset, (version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_ID));
@@ -38,17 +41,28 @@ ID3v2_frame* parse_frame(char* bytes, int offset, int version)
         frame->size = syncint_decode(frame->size);
     }
 
+    // detecting if all frames are unsynchronized
+    if(tag->tag_header->flags&(1<<7)==1<<7)
+      unsynchronisation = 1;
+
     if(version != ID3v22) // flags are only available in v23 and 24 tags
     {
       memcpy(frame->flags, bytes + (offset += ID3_FRAME_SIZE), 2);
       offset += ID3_FRAME_FLAGS;
+
+      // id3 v2.3 and v2.4 frames can define single-frame unsynchronisation in there flags too
+      if(frame->flags[1]&(1<<1)==(1<<1))
+        unsynchronisation = 1;
     }
     else
       // just pushing the offset forward
       offset += ID3_FRAME_SIZE2;
     
     // Load frame data
-    frame->data = (char*) malloc(frame->size * sizeof(char));
+    if(unsynchronisation)
+      frame->data = synchronize_data(bytes + offset, frame->size);
+    else
+      frame->data= (char *)malloc(frame->size * sizeof(char));
 
     if(get_frame_type(frame->frame_id)==COMMENT_FRAME)
     {
@@ -263,4 +277,47 @@ ID3v2_frame *get_frame(ID3v2_tag *tag, char *frame_id)
   }
 
   return matching_frame;
+}
+
+char *synchronize_data(char *data, int size)
+{
+  char check = 0; // indicated we'll have to inspect the next 2 bytes carefully
+  int i;
+  int sync_size = 0; // size of the synchronized data stream
+  // at first allocating as much space as given into this function, if less is used we'll re-allocate later
+  char *sync_data=(char *)malloc(size * sizeof(char));
+ 
+  for(i = 0; i < size; i++)
+  {
+    switch(check)
+    {
+      case 0:
+        // check if we find the relevant syncbyte here
+        if(data[i]==0xFF)
+          check = 1;
+        sync_data[sync_size++] = data[i];
+        break;
+      case 1:
+        if(data[i]!=0x00) // false alarm
+        {
+          check = 0;
+          sync_data[sync_size++] = data[i];
+        }
+        else // inspect even more
+          check++;
+        break;
+      case 2:
+        if(data[i]!=0x00 && data[i]&(111<<7)!=(111<<7))
+        // false alarm, so we have to copy the previous byte at next and reset everything
+          sync_data[sync_size++] = data[i-1];
+        sync_data[sync_size++] = data[i];
+        check = 0;
+        break;
+    }
+  }  
+  // if we successfully synchronized something, we can re-allocate some stuff here
+  if(sync_size<size)
+    sync_data = (char *)realloc(sync_data, sync_size);
+
+  return sync_data;
 }
