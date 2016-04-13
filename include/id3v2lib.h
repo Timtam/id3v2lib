@@ -18,7 +18,7 @@
 
 ID3v2_tag* load_tag(const char* file_name);
 ID3v2_tag* load_tag_with_buffer(char* buffer, int length);
-void remove_tag(const char* file_name);
+//void remove_tag(const char* file_name);
 void set_tag(const char* file_name, ID3v2_tag* tag);
 
 // Getter functions

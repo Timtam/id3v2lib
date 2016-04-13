@@ -16,38 +16,56 @@
 ID3v2_tag* load_tag(const char* file_name)
 {
     char *buffer;
+    int count;
     FILE *file;
-    int header_size;
+    ID3v2_header *header;
+    int *offsets;
     ID3v2_tag *tag;
+    int tag_size;
+
+    file=fopen(file_name, "rb");
+
+    if(file==NULL)
+      return NULL;
+
+    // parse file for id3 tags
+    find_headers_in_file(file, &offsets, &count);
+
+    // no headers found?
+    if(count==0)
+      return NULL;
+
+    // todo: process multiple tags in files consequently, meaning
+      // tag appending
+      // tag updating
+      // tag replacing
+    // for now, we will just take the first tag found in the file
+
+    header = get_tag_header_from_file(file, offsets[0]);
+
+    if(header==NULL)
+      // whatever went wrong here, since we already found a header there
+      return NULL;
 
     // get header size
-    ID3v2_header *tag_header = get_tag_header(file_name);
-    if(tag_header == NULL) {
-        return NULL;
-    }
-    header_size = tag_header->tag_size;
-    free(tag_header);
+    tag_size = header->tag_size;
+    free(header);
 
     // allocate buffer and fetch header
-    file = fopen(file_name, "rb");
-    if(file == NULL)
-    {
-        perror("Error opening file");
-        return NULL;
-    }
-    buffer = (char*) malloc((10+header_size) * sizeof(char));
+    buffer = (char*) malloc((10+tag_size) * sizeof(char));
     if(buffer == NULL) {
         perror("Could not allocate buffer");
         fclose(file);
         return NULL;
     }
-    //fseek(file, 10, SEEK_SET);
-    fread(buffer, header_size+10, 1, file);
+
+    fseek(file, offsets[0], SEEK_SET);
+
+    fread(buffer, tag_size+10, 1, file);
     fclose(file);
 
-
     //parse free and return
-    tag = load_tag_with_buffer(buffer, header_size);
+    tag = load_tag_with_buffer(buffer, tag_size+10);
     free(buffer);
 
     return tag;
@@ -112,6 +130,7 @@ ID3v2_tag* load_tag_with_buffer(char *bytes, int length)
     return tag;
 }
 
+/* for now commented out, will be edited later
 void remove_tag(const char* file_name)
 {
     int c;
@@ -149,6 +168,7 @@ void remove_tag(const char* file_name)
     fclose(temp_file);
 
 }
+*/
 
 void write_header(ID3v2_header* tag_header, FILE* file)
 {
