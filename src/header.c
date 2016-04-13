@@ -65,6 +65,18 @@ ID3v2_header* get_tag_header_with_buffer(char *buffer, int length)
     tag_header->major_version = buffer[position += ID3_HEADER_TAG];
     tag_header->minor_version = buffer[position += ID3_HEADER_VERSION];
     tag_header->flags = buffer[position += ID3_HEADER_REVISION];
+
+    // checking if the as unused declared flags are set in any way
+    // this would mean we stop parsing here, since we might encounter things we don't know how to handle
+    if(tag_header->flags&(1<<3)==(1<<3) ||
+       tag_header->flags&(1<<2)==(1<<2) ||
+       tag_header->flags&(1<<1)==(1<<1) ||
+       tag_header->flags&1==1)
+    {
+      free(tag_header);
+      return NULL;
+    }
+
     tag_header->tag_size = syncint_decode(btoi(buffer, ID3_HEADER_SIZE, position += ID3_HEADER_FLAGS));
 
     if(tag_header->flags&(1<<6)==(1<<6))

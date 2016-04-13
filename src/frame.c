@@ -49,6 +49,15 @@ ID3v2_frame* parse_frame(ID3v2_tag *tag, char *bytes)
       memcpy(frame->flags, bytes + (offset += ID3_FRAME_SIZE), 2);
       offset += ID3_FRAME_FLAGS;
 
+      // if some unknown flags are set, we ignore this frame since that actually means that the frame might not be parseable
+      if(frame->flags[1]&(1<<7)==(1<<7) ||
+         frame->flags[1]&(1<<5)==(1<<5) ||
+         frame->flags[1]&(1<<4)==(1<<4))
+      {
+        frame->parsed = 0;
+        return frame;
+      }
+
       // id3 v2.3 and v2.4 frames can define single-frame unsynchronisation in there flags too
       if(frame->flags[1]&(1<<1)==(1<<1))
         unsynchronisation = 1;
@@ -66,6 +75,8 @@ ID3v2_frame* parse_frame(ID3v2_tag *tag, char *bytes)
     memcpy(frame->data, bytes + offset, frame->size);
     
     frame->version = version;
+    // the frame was successfully parsed
+    frame->parsed = 1;
 
     return frame;
 }

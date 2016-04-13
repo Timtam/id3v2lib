@@ -56,6 +56,7 @@ ID3v2_tag* load_tag(const char* file_name)
 ID3v2_tag* load_tag_with_buffer(char *bytes, int length)
 {
     // Declaration
+    char *c_bytes;
     ID3v2_frame *frame;
     ID3v2_tag* tag;
     ID3v2_header* tag_header;
@@ -90,14 +91,22 @@ ID3v2_tag* load_tag_with_buffer(char *bytes, int length)
     if(tag_header->extended_header_size)
       // an extended header exists, so we skip it too
       bytes+=tag_header->extended_header_size+4; // don't forget to skip the extended header size bytes too
-    
-    frame = parse_frame(tag, bytes);
 
-    while(frame != NULL)
+    c_bytes = bytes;
+    
+    while((bytes - c_bytes) < tag_header->tag_size)
     {
-      bytes += frame->size + (get_tag_version(tag_header) == ID3v22 ? 6 : 10);
-      add_frame(tag, frame);
-      frame = parse_frame(tag, bytes);
+      frame=parse_frame(tag, bytes);
+      if(frame != NULL) // a frame was found
+      {
+        if(frame->parsed) // and it got parsed
+          add_frame(tag, frame);
+        bytes += frame->size + 10;
+        if(!(frame->parsed))
+          free(frame);
+      }
+      else
+        break;
     }
 
     return tag;

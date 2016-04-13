@@ -59,6 +59,7 @@ struct ID3v2_frame
     int version; // needed to identify the tag version this frame is related too
     char* data;
     ID3v2_frame *next;
+    char parsed; // indicates if the frame could be successfully parsed or not
 };
 
 typedef struct
