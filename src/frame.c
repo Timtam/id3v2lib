@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "id3v2lib.h"
 
@@ -34,7 +35,26 @@ ID3v2_frame* parse_frame(ID3v2_tag *tag, char *bytes)
         return NULL;
     }
 
-    frame->size = btoi(bytes, (version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_SIZE), offset += (version==ID3v22 ? ID3_FRAME_ID2 : ID3_FRAME_ID));
+    // check if all relevant chars are alphabetical
+    if(version == ID3v22 && (
+       !isalpha(frame->frame_id[0]) ||
+       !isalpha(frame->frame_id[1]) ||
+       !isalpha(frame->frame_id[2])))
+    {
+      free(frame);
+      return NULL;
+    }
+    else if(version != ID3v22 && (
+            !isalpha(frame->frame_id[0]) ||
+            !isalpha(frame->frame_id[1]) ||
+            !isalpha(frame->frame_id[2]) ||
+            !isalpha(frame->frame_id[3])))
+    {
+      free(frame);
+      return NULL;
+    }
+
+    frame->size = btoi(bytes, DECIDE_FRAME(version, ID3_FRAME_SIZE2, ID3_FRAME_SIZE), offset += DECIDE_FRAME(version, ID3_FRAME_ID2, ID3_FRAME_ID));
     if(version == ID3v24)
     {
         frame->size = syncint_decode(frame->size);
