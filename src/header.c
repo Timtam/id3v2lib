@@ -222,5 +222,6 @@ void find_headers_in_file(FILE *file, int **location, int *size)
   else
     *size = 0;
 
+  free(header_bytes);
   return;
 }

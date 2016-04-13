@@ -63,6 +63,7 @@ ID3v2_tag* load_tag(const char* file_name)
 
     fread(buffer, tag_size+10, 1, file);
     fclose(file);
+    free(offsets);
 
     //parse free and return
     tag = load_tag_with_buffer(buffer, tag_size+10);
