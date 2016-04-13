@@ -35,7 +35,7 @@ typedef struct
 typedef struct
 {
     char language[ID3_FRAME_LANGUAGE];
-    char short_description[2];
+    char short_description[4];
     ID3v2_frame_text_content* text;
 } ID3v2_frame_comment_content;
 
@@ -56,7 +56,7 @@ struct ID3v2_frame
     char frame_id[ID3_FRAME_ID];
     int size;
     char flags[ID3_FRAME_FLAGS];
-    int major_version; // needed to identify the tag version this frame is related too
+    int version; // needed to identify the tag version this frame is related too
     char* data;
     ID3v2_frame *next;
 };

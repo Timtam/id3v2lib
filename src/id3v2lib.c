@@ -163,9 +163,9 @@ void write_header(ID3v2_header* tag_header, FILE* file)
 
 void write_frame(ID3v2_frame* frame, FILE* file)
 {
-    fwrite(frame->frame_id, 1, (frame->major_version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_SIZE), file);
-    fwrite(itob(frame->size), 1, (frame->major_version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_SIZE), file);
-    if(frame->major_version!=ID3v22)
+    fwrite(frame->frame_id, 1, (frame->version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_SIZE), file);
+    fwrite(itob(frame->size), 1, (frame->version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_SIZE), file);
+    if(frame->version!=ID3v22)
       fwrite(frame->flags, 1, 2, file);
     fwrite(frame->data, 1, frame->size, file);
 }
@@ -183,7 +183,7 @@ int get_tag_size(ID3v2_tag* tag)
     frame = tag->frame;
     while(frame != NULL)
     {
-        size += frame->size + (frame->major_version==ID3v22 ? 6 : 10);
+        size += frame->size + (frame->version==ID3v22 ? 6 : 10);
         frame = frame->next;
     }
 
@@ -383,7 +383,7 @@ void set_text_frame(char* data, char encoding, char* frame_id, ID3v2_frame* fram
 
 void set_comment_frame(char* data, char encoding, ID3v2_frame* frame)
 {
-    memcpy(frame->frame_id, COMMENT_FRAME_ID(frame->major_version), 4);
+    memcpy(frame->frame_id, COMMENT_FRAME_ID(frame->version), 4);
     frame->size = 1 + 3 + 1 + (int) strlen(data); // encoding + language + description + comment
 
     frame->data = (char*) malloc(frame->size * sizeof(char));
@@ -395,7 +395,7 @@ void set_album_cover_frame(char* album_cover_bytes, char* mimetype, int picture_
 {
     int offset;
 
-    memcpy(frame->frame_id, ALBUM_COVER_FRAME_ID(frame->major_version), 4);
+    memcpy(frame->frame_id, ALBUM_COVER_FRAME_ID(frame->version), 4);
     frame->size = 1 + (int) strlen(mimetype) + 1 + 1 + 1 + picture_size; // encoding + mimetype + 00 + type + description + picture
 
     frame->data = (char*) malloc(frame->size * sizeof(char));

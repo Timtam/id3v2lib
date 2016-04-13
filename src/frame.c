@@ -17,7 +17,6 @@ ID3v2_frame* parse_frame(ID3v2_tag *tag, int offset)
 {
     char *bytes=tag->raw;
     ID3v2_frame* frame = new_frame();
-    char tmp[2];
     char unsynchronisation = 0;
     int version = get_tag_version(tag->tag_header);
     
@@ -64,20 +63,9 @@ ID3v2_frame* parse_frame(ID3v2_tag *tag, int offset)
     else
       frame->data= (char *)malloc(frame->size * sizeof(char));
 
-    if(get_frame_type(frame->frame_id)==COMMENT_FRAME)
-    {
-      // in this case we need to copy the short descriptor first, then the encoding and then the rest
-      if(has_bom(bytes + offset + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE))
-      {
-        memcpy(tmp, bytes + offset + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE + 2, 2);
-        memmove(bytes + offset + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE + 2, bytes + offset + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE, 2);
-        memcpy(bytes + offset + ID3_FRAME_ENCODING + ID3_FRAME_LANGUAGE, tmp, 2);
-      }
-    }
-      
     memcpy(frame->data, bytes + offset, frame->size);
     
-    frame->major_version = version;
+    frame->version = version;
 
     return frame;
 }
@@ -138,18 +126,19 @@ ID3v2_frame_comment_content* parse_comment_frame_content(ID3v2_frame* frame)
     memcpy(content->language, frame->data + offset, ID3_FRAME_LANGUAGE);
     offset += ID3_FRAME_LANGUAGE;
 
+    if(content->text->encoding==UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data + offset))
+      content->text->encoding = UTF_16_ENCODING_WITHOUT_BOM;
+
     if(content->text->encoding==ISO_ENCODING || content->text->encoding == UTF_8_ENCODING)
     {
       content->short_description[0]=(frame->data)[offset];
-      content->short_description[1]='\0';
+      memset(content->short_description + 1, '\0', 3);
       offset += 1;
     }
     else
     {
-      memcpy(content->short_description, frame->data+offset, 2);
-      offset += 2;
-      if(content->text->encoding==UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data+offset))
-        content->text->encoding=UTF_16_ENCODING_WITHOUT_BOM;
+      memcpy(content->short_description, frame->data+offset, 4);
+      offset += 4;
     }
 
     content->text->size = frame->size - offset;
@@ -190,7 +179,7 @@ ID3v2_frame_apic_content* parse_apic_frame_content(ID3v2_frame* frame)
 
     content->mime_type = frame->data+offset;
 
-    if(frame->major_version==ID3v22)
+    if(frame->version==ID3v22)
     {
       // id3 v2.2 mime types are always (!) exactly 3 bytes long, without the terminator
       content->mime_type_size = 3;
@@ -266,7 +255,7 @@ ID3v2_frame *get_frame(ID3v2_tag *tag, char *frame_id)
     // we will copy the id here so we can adjust it if necessary
     memcpy(tmp_id, frame_id, ID3_FRAME_ID);
 
-    if(matching_frame->major_version==ID3v22)
+    if(matching_frame->version==ID3v22)
       // since id3 v22 only has 3-byte identifiers, we will replace the fourth sign (if available) with the empty sign
       tmp_id[3]='\0';
 
