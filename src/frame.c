@@ -13,10 +13,10 @@
 
 #include "id3v2lib.h"
 
-ID3v2_frame* parse_frame(ID3v2_tag *tag, int offset)
+ID3v2_frame* parse_frame(ID3v2_tag *tag, char *bytes)
 {
-    char *bytes=tag->raw;
     ID3v2_frame* frame = new_frame();
+    int offset = 0;
     char unsynchronisation = 0;
     int version = get_tag_version(tag->tag_header);
     

@@ -78,7 +78,6 @@ void free_tag(ID3v2_tag* tag)
     ID3v2_frame *frame;
     ID3v2_frame *next_frame;
 
-    free(tag->raw);
     free(tag->tag_header);
     frame = tag->frame;
     while(frame != NULL)

@@ -63,7 +63,6 @@ struct ID3v2_frame
 
 typedef struct
 {
-    char* raw;
     ID3v2_header* tag_header;
     ID3v2_frame *frame;
 } ID3v2_tag;

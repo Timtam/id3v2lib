@@ -57,7 +57,6 @@ ID3v2_tag* load_tag_with_buffer(char *bytes, int length)
 {
     // Declaration
     ID3v2_frame *frame;
-    int offset = 0;
     ID3v2_tag* tag;
     ID3v2_header* tag_header;
 
@@ -92,23 +91,13 @@ ID3v2_tag* load_tag_with_buffer(char *bytes, int length)
       // an extended header exists, so we skip it too
       bytes+=tag_header->extended_header_size+4; // don't forget to skip the extended header size bytes too
     
-    tag->raw = (char*) malloc(tag->tag_header->tag_size * sizeof(char));
-    memcpy(tag->raw, bytes, tag_header->tag_size);
-    // we use tag_size here to prevent copying too much if the user provides more bytes than needed to this function
+    frame = parse_frame(tag, bytes);
 
-    while(offset < tag_header->tag_size)
+    while(frame != NULL)
     {
-        frame = parse_frame(tag, offset);
-
-        if(frame != NULL)
-        {
-            offset += frame->size + (get_tag_version(tag_header) == ID3v22 ? 6 : 10);
-            add_frame(tag, frame);
-        }
-        else
-        {
-            break;
-        }
+      bytes += frame->size + (get_tag_version(tag_header) == ID3v22 ? 6 : 10);
+      add_frame(tag, frame);
+      frame = parse_frame(tag, bytes);
     }
 
     return tag;
