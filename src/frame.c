@@ -21,6 +21,9 @@ ID3v2_frame* parse_frame(ID3v2_tag *tag, char *bytes)
     char unsynchronisation = 0;
     int version = get_tag_version(tag->tag_header);
     
+    if(frame == NULL)
+      return NULL;
+
     // Parse frame header
     memcpy(frame->frame_id, bytes + offset, (version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_ID));
 
@@ -92,6 +95,13 @@ ID3v2_frame* parse_frame(ID3v2_tag *tag, char *bytes)
     else
       frame->data= (char *)malloc(frame->size * sizeof(char));
 
+    if(frame->data == NULL)
+    {
+      free(frame);
+      return NULL;
+    }
+
+
     memcpy(frame->data, bytes + offset, frame->size);
     
     frame->version = version;
@@ -125,10 +135,18 @@ ID3v2_frame_text_content* parse_text_frame_content(ID3v2_frame* frame)
     ID3v2_frame_text_content* content;
     if(frame == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
     
     content = new_text_content();
+
+    if(content==NULL)
+    {
+      E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
+      return NULL;
+    }
+
     content->encoding = frame->data[0];
 
     if(content->encoding==UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data+ID3_FRAME_ENCODING))
@@ -136,6 +154,9 @@ ID3v2_frame_text_content* parse_text_frame_content(ID3v2_frame* frame)
 
     content->size = frame->size - ID3_FRAME_ENCODING;
     content->data=frame->data + ID3_FRAME_ENCODING;
+
+    E_SUCCESS;
+
     return content;
 }
 
@@ -146,10 +167,17 @@ ID3v2_frame_comment_content* parse_comment_frame_content(ID3v2_frame* frame)
 
     if(frame == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
     
     content = new_comment_content();
+
+    if(content==NULL)
+    {
+      E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
+      return NULL;
+    }
     
     content->text->encoding = frame->data[0];
     offset += ID3_FRAME_ENCODING;
@@ -175,6 +203,8 @@ ID3v2_frame_comment_content* parse_comment_frame_content(ID3v2_frame* frame)
     content->text->size = frame->size - offset;
 
     content->text->data=frame->data + offset;
+
+    E_SUCCESS;
     
     return content;
 }
@@ -198,10 +228,17 @@ ID3v2_frame_apic_content* parse_apic_frame_content(ID3v2_frame* frame)
 
     if(frame == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
     
     content = new_apic_content();
+
+    if(content==NULL)
+    {
+      E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
+      return NULL;
+    }
     
     content->encoding = frame->data[0];
 
@@ -248,7 +285,9 @@ ID3v2_frame_apic_content* parse_apic_frame_content(ID3v2_frame* frame)
   
     content->picture_size = frame->size - offset;
     content->data= frame->data + offset;
-    
+    E_SUCCESS;    
+
+
     return content;
 }
 
@@ -276,8 +315,11 @@ ID3v2_frame *get_frame(ID3v2_tag *tag, char *frame_id)
   ID3v2_frame *matching_frame;
 
   if(tag->frame == NULL)
+  {
     // no frames in tag, return nothing
+    E_FAIL(ID3_ERROR_NOT_FOUND);
     return NULL;
+  }
 
   matching_frame = tag->frame;
 
@@ -296,6 +338,11 @@ ID3v2_frame *get_frame(ID3v2_tag *tag, char *frame_id)
     matching_frame = matching_frame->next;
   }
 
+  if(matching_frame == NULL)
+    E_FAIL(ID3_ERROR_NOT_FOUND);
+  else
+    E_SUCCESS;
+
   return matching_frame;
 }
 
@@ -307,6 +354,9 @@ char *synchronize_data(char *data, int size)
   // at first allocating as much space as given into this function, if less is used we'll re-allocate later
   char *sync_data=(char *)malloc(size * sizeof(char));
  
+  if(sync_data==NULL)
+    return NULL;
+
   for(i = 0; i < size; i++)
   {
     switch(check)
@@ -337,7 +387,11 @@ char *synchronize_data(char *data, int size)
   }  
   // if we successfully synchronized something, we can re-allocate some stuff here
   if(sync_size<size)
+  {
     sync_data = (char *)realloc(sync_data, sync_size);
+    if(sync_data == NULL)
+      return NULL;
+  }
 
   return sync_data;
 }

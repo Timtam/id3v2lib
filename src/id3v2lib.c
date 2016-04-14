@@ -26,14 +26,21 @@ ID3v2_tag* load_tag(const char* file_name)
     file=fopen(file_name, "rb");
 
     if(file==NULL)
+    {
+      E_FAIL(ID3_ERROR_UNABLE_TO_OPEN);
       return NULL;
+    }
 
     // parse file for id3 tags
     find_headers_in_file(file, &offsets, &count);
 
     // no headers found?
     if(count==0)
+    {
+      E_FAIL(ID3_ERROR_NOT_FOUND);
+      fclose(file);
       return NULL;
+    }
 
     // todo: process multiple tags in files consequently, meaning
       // tag appending
@@ -44,8 +51,12 @@ ID3v2_tag* load_tag(const char* file_name)
     header = get_tag_header_from_file(file, offsets[0]);
 
     if(header==NULL)
+    {
       // whatever went wrong here, since we already found a header there
+      E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
+      fclose(file);
       return NULL;
+    }
 
     // get header size
     tag_size = header->tag_size;
@@ -53,8 +64,9 @@ ID3v2_tag* load_tag(const char* file_name)
 
     // allocate buffer and fetch header
     buffer = (char*) malloc((10+tag_size) * sizeof(char));
-    if(buffer == NULL) {
-        perror("Could not allocate buffer");
+    if(buffer == NULL)
+    {
+        E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
         fclose(file);
         return NULL;
     }
@@ -84,23 +96,34 @@ ID3v2_tag* load_tag_with_buffer(char *bytes, int length)
     tag_header = get_tag_header_with_buffer(bytes, length);
 
     if(tag_header == NULL) // no valid header found
+    {
+      E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
       return NULL;
+    }
 
     if(get_tag_version(tag_header) == NO_COMPATIBLE_TAG)
     {
         // no supported id3 tag found
+        E_FAIL(ID3_ERROR_INCOMPATIBLE_TAG);
         free(tag_header);
         return NULL;
     }
 
     if(length < tag_header->tag_size+10)
     {
-        // Not enough bytes provided to parse completely. TODO: how to communicate to the user the lack of bytes?
+        // Not enough bytes provided to parse completely.
+        E_FAIL(ID3_ERROR_INSUFFICIENT_DATA);
         free(tag_header);
         return NULL;
     }
 
     tag = new_tag();
+
+    if(tag == NULL)
+    {
+        E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
+        return NULL;
+    }
 
     // Associations
     tag->tag_header = tag_header;
@@ -127,6 +150,8 @@ ID3v2_tag* load_tag_with_buffer(char *bytes, int length)
       else
         break;
     }
+
+    E_SUCCESS;
 
     return tag;
 }
@@ -278,6 +303,7 @@ ID3v2_frame* tag_get_title(ID3v2_tag* tag)
 {
     if(tag == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
 
@@ -288,6 +314,7 @@ ID3v2_frame* tag_get_artist(ID3v2_tag* tag)
 {
     if(tag == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
 
@@ -298,6 +325,7 @@ ID3v2_frame* tag_get_album(ID3v2_tag* tag)
 {
     if(tag == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
 
@@ -308,6 +336,7 @@ ID3v2_frame* tag_get_album_artist(ID3v2_tag* tag)
 {
     if(tag == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
 
@@ -318,6 +347,7 @@ ID3v2_frame* tag_get_genre(ID3v2_tag* tag)
 {
     if(tag == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
 
@@ -328,6 +358,7 @@ ID3v2_frame* tag_get_track(ID3v2_tag* tag)
 {
     if(tag == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
 
@@ -338,6 +369,7 @@ ID3v2_frame* tag_get_year(ID3v2_tag* tag)
 {
     if(tag == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
 
@@ -348,6 +380,7 @@ ID3v2_frame* tag_get_comment(ID3v2_tag* tag)
 {
     if(tag == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
 
@@ -358,6 +391,7 @@ ID3v2_frame* tag_get_disc_number(ID3v2_tag* tag)
 {
     if(tag == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
 
@@ -368,6 +402,7 @@ ID3v2_frame* tag_get_composer(ID3v2_tag* tag)
 {
     if(tag == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
 
@@ -378,6 +413,7 @@ ID3v2_frame* tag_get_album_cover(ID3v2_tag* tag)
 {
     if(tag == NULL)
     {
+        E_FAIL(ID3_ERROR_NOT_FOUND);
         return NULL;
     }
 

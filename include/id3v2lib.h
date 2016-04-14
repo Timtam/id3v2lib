@@ -12,6 +12,7 @@
 
 #include "id3v2lib/types.h"
 #include "id3v2lib/constants.h"
+#include "id3v2lib/errors.h"
 #include "id3v2lib/header.h"
 #include "id3v2lib/frame.h"
 #include "id3v2lib/utils.h"
