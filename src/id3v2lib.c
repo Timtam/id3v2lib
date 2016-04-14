@@ -13,7 +13,7 @@
 
 #include "id3v2lib.h"
 
-ID3v2_tag* load_tag(const char* file_name)
+ID3v2_tag* load_tag_from_file(const char* file_name)
 {
     char *buffer;
     int count;
@@ -48,7 +48,7 @@ ID3v2_tag* load_tag(const char* file_name)
       // tag replacing
     // for now, we will just take the first tag found in the file
 
-    header = get_tag_header_from_file(file, offsets[0]);
+    header = get_header_from_file(file, offsets[0]);
 
     if(header==NULL)
     {
@@ -78,13 +78,13 @@ ID3v2_tag* load_tag(const char* file_name)
     free(offsets);
 
     //parse free and return
-    tag = load_tag_with_buffer(buffer, tag_size+10);
+    tag = load_tag_from_buffer(buffer, tag_size+10);
     free(buffer);
 
     return tag;
 }
 
-ID3v2_tag* load_tag_with_buffer(char *bytes, int length)
+ID3v2_tag* load_tag_from_buffer(char *bytes, int length)
 {
     // Declaration
     char *c_bytes;
@@ -93,7 +93,7 @@ ID3v2_tag* load_tag_with_buffer(char *bytes, int length)
     ID3v2_header* tag_header;
 
     // Initialization
-    tag_header = get_tag_header_with_buffer(bytes, length);
+    tag_header = get_header_from_buffer(bytes, length);
 
     if(tag_header == NULL) // no valid header found
     {

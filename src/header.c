@@ -33,7 +33,7 @@ int _has_id3v2tag(char* raw_header)
     return 0;
 }
 
-ID3v2_header* get_tag_header_from_file(FILE *file, int offset)
+ID3v2_header* get_header_from_file(FILE *file, int offset)
 {
     char buffer[ID3_HEADER];
     if(file == NULL)
@@ -45,9 +45,9 @@ ID3v2_header* get_tag_header_from_file(FILE *file, int offset)
     fseek(file, offset, SEEK_SET);
 
     fread(buffer, ID3_HEADER, 1, file);
-    return get_tag_header_with_buffer(buffer, ID3_HEADER);
+    return get_header_from_buffer(buffer, ID3_HEADER);
 }
-ID3v2_header* get_tag_header_with_buffer(char *buffer, int length)
+ID3v2_header* get_header_from_buffer(char *buffer, int length)
 {
     int position = 0;
     ID3v2_header *tag_header;
@@ -187,7 +187,7 @@ void find_headers_in_file(FILE *file, int **location, int *size)
         fseek(file, -11, SEEK_CUR);
         // so we get the header bytes and parse them to find out if we actually found a parseable header
         fgets(header_bytes, 10, file);
-        header=get_tag_header_with_buffer(header_bytes, 10);
+        header=get_header_from_buffer(header_bytes, 10);
         if(header==NULL)
           continue;
         // we successfully found something useful

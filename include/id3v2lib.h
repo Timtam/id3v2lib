@@ -17,8 +17,8 @@
 #include "id3v2lib/frame.h"
 #include "id3v2lib/utils.h"
 
-ID3v2_tag* load_tag(const char* file_name);
-ID3v2_tag* load_tag_with_buffer(char* buffer, int length);
+ID3v2_tag* load_tag_from_file(const char* file_name);
+ID3v2_tag* load_tag_from_buffer(char* buffer, int length);
 //void remove_tag(const char* file_name);
 void set_tag(const char* file_name, ID3v2_tag* tag);
 
