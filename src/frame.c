@@ -14,9 +14,9 @@
 
 #include "id3v2lib.h"
 
-ID3v2_frame* parse_frame_from_tag(ID3v2_tag *tag, char *bytes)
+id3v2_frame* parse_frame_from_tag(id3v2_tag *tag, char *bytes)
 {
-    ID3v2_frame* frame = new_frame();
+    id3v2_frame* frame = new_frame();
     int offset = 0;
     char unsynchronisation = 0;
     int version = get_tag_version(tag->tag_header);
@@ -25,9 +25,9 @@ ID3v2_frame* parse_frame_from_tag(ID3v2_tag *tag, char *bytes)
       return NULL;
 
     // Parse frame header
-    memcpy(frame->frame_id, bytes + offset, (version==ID3v22 ? ID3_FRAME_SIZE2 : ID3_FRAME_ID));
+    memcpy(frame->frame_id, bytes + offset, (version==ID3V22 ? ID3V2_FRAME_SIZE2 : ID3V2_FRAME_ID));
 
-    if(version==ID3v22)
+    if(version==ID3V22)
       // fill the remaining space with emptyness
       frame->frame_id[3]='\0';
 
@@ -39,7 +39,7 @@ ID3v2_frame* parse_frame_from_tag(ID3v2_tag *tag, char *bytes)
     }
 
     // check if all relevant chars are alphabetical
-    if(version == ID3v22 && (
+    if(version == ID3V22 && (
        !isalpha(frame->frame_id[0]) ||
        !isalpha(frame->frame_id[1]) ||
        !isalpha(frame->frame_id[2])))
@@ -47,7 +47,7 @@ ID3v2_frame* parse_frame_from_tag(ID3v2_tag *tag, char *bytes)
       free(frame);
       return NULL;
     }
-    else if(version != ID3v22 && (
+    else if(version != ID3V22 && (
             !isalpha(frame->frame_id[0]) ||
             !isalpha(frame->frame_id[1]) ||
             !isalpha(frame->frame_id[2]) ||
@@ -57,8 +57,8 @@ ID3v2_frame* parse_frame_from_tag(ID3v2_tag *tag, char *bytes)
       return NULL;
     }
 
-    frame->size = btoi(bytes, DECIDE_FRAME(version, ID3_FRAME_SIZE2, ID3_FRAME_SIZE), offset += DECIDE_FRAME(version, ID3_FRAME_ID2, ID3_FRAME_ID));
-    if(version == ID3v24)
+    frame->size = btoi(bytes, ID3V2_DECIDE_FRAME(version, ID3V2_FRAME_SIZE2, ID3V2_FRAME_SIZE), offset += ID3V2_DECIDE_FRAME(version, ID3V2_FRAME_ID2, ID3V2_FRAME_ID));
+    if(version == ID3V24)
     {
         frame->size = syncint_decode(frame->size);
     }
@@ -67,10 +67,10 @@ ID3v2_frame* parse_frame_from_tag(ID3v2_tag *tag, char *bytes)
     if(tag->tag_header->flags&(1<<7)==1<<7)
       unsynchronisation = 1;
 
-    if(version != ID3v22) // flags are only available in v23 and 24 tags
+    if(version != ID3V22) // flags are only available in v23 and 24 tags
     {
-      memcpy(frame->flags, bytes + (offset += ID3_FRAME_SIZE), 2);
-      offset += ID3_FRAME_FLAGS;
+      memcpy(frame->flags, bytes + (offset += ID3V2_FRAME_SIZE), 2);
+      offset += ID3V2_FRAME_FLAGS;
 
       // if some unknown flags are set, we ignore this frame since that actually means that the frame might not be parseable
       if(frame->flags[1]&(1<<7)==(1<<7) ||
@@ -87,11 +87,11 @@ ID3v2_frame* parse_frame_from_tag(ID3v2_tag *tag, char *bytes)
     }
     else
       // just pushing the offset forward
-      offset += ID3_FRAME_SIZE2;
+      offset += ID3V2_FRAME_SIZE2;
     
     // Load frame data
     if(unsynchronisation)
-      frame->data = synchronize_data(bytes + offset, frame->size);
+      frame->data = synchronize_data_from_buffer(bytes + offset, frame->size);
     else
       frame->data= (char *)malloc(frame->size * sizeof(char));
 
@@ -115,27 +115,27 @@ int get_frame_type(char* frame_id)
 {
     // some exceptions, for example...
     if(strcmp(frame_id, "PIC\0")==0) // not called APIC in v22, but PIC instead
-      return APIC_FRAME;
+      return ID3V2_APIC_FRAME;
 
     switch(frame_id[0])
     {
         case 'T':
-            return TEXT_FRAME;
+            return ID3V2_TEXT_FRAME;
         case 'C':
-            return COMMENT_FRAME;
+            return ID3V2_COMMENT_FRAME;
         case 'A':
-            return APIC_FRAME;
+            return ID3V2_APIC_FRAME;
         default:
-            return INVALID_FRAME;
+            return ID3V2_INVALID_FRAME;
     }
 }
 
-ID3v2_frame_text_content* parse_text_content_from_frame(ID3v2_frame* frame)
+id3v2_frame_text_content* parse_text_content_from_frame(id3v2_frame* frame)
 {
-    ID3v2_frame_text_content* content;
+    id3v2_frame_text_content* content;
     if(frame == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
     
@@ -143,31 +143,31 @@ ID3v2_frame_text_content* parse_text_content_from_frame(ID3v2_frame* frame)
 
     if(content==NULL)
     {
-      E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
       return NULL;
     }
 
     content->encoding = frame->data[0];
 
-    if(content->encoding==UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data+ID3_FRAME_ENCODING))
-      content->encoding = UTF_16_ENCODING_WITHOUT_BOM;
+    if(content->encoding==ID3V2_UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data+ID3V2_FRAME_ENCODING))
+      content->encoding = ID3V2_UTF_16_ENCODING_WITHOUT_BOM;
 
-    content->size = frame->size - ID3_FRAME_ENCODING;
-    content->data=frame->data + ID3_FRAME_ENCODING;
+    content->size = frame->size - ID3V2_FRAME_ENCODING;
+    content->data=frame->data + ID3V2_FRAME_ENCODING;
 
     E_SUCCESS;
 
     return content;
 }
 
-ID3v2_frame_comment_content* parse_comment_content_from_frame(ID3v2_frame* frame)
+id3v2_frame_comment_content* parse_comment_content_from_frame(id3v2_frame* frame)
 {
-    ID3v2_frame_comment_content *content;
+    id3v2_frame_comment_content *content;
     int offset = 0;
 
     if(frame == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
     
@@ -175,20 +175,20 @@ ID3v2_frame_comment_content* parse_comment_content_from_frame(ID3v2_frame* frame
 
     if(content==NULL)
     {
-      E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
       return NULL;
     }
     
     content->text->encoding = frame->data[0];
-    offset += ID3_FRAME_ENCODING;
+    offset += ID3V2_FRAME_ENCODING;
 
-    memcpy(content->language, frame->data + offset, ID3_FRAME_LANGUAGE);
-    offset += ID3_FRAME_LANGUAGE;
+    memcpy(content->language, frame->data + offset, ID3V2_FRAME_LANGUAGE);
+    offset += ID3V2_FRAME_LANGUAGE;
 
-    if(content->text->encoding==UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data + offset))
-      content->text->encoding = UTF_16_ENCODING_WITHOUT_BOM;
+    if(content->text->encoding==ID3V2_UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data + offset))
+      content->text->encoding = ID3V2_UTF_16_ENCODING_WITHOUT_BOM;
 
-    if(content->text->encoding==ISO_ENCODING || content->text->encoding == UTF_8_ENCODING)
+    if(content->text->encoding==ID3V2_ISO_ENCODING || content->text->encoding == ID3V2_UTF_8_ENCODING)
     {
       content->short_description[0]=(frame->data)[offset];
       memset(content->short_description + 1, '\0', 3);
@@ -221,14 +221,14 @@ int get_mime_type_size_from_buffer(char* data)
     return i;
 }
 
-ID3v2_frame_apic_content* parse_apic_content_from_frame(ID3v2_frame* frame)
+id3v2_frame_apic_content* parse_apic_content_from_frame(id3v2_frame* frame)
 {
-    ID3v2_frame_apic_content *content;
+    id3v2_frame_apic_content *content;
     int offset = 1; // Skip ID3_FRAME_ENCODING
 
     if(frame == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
     
@@ -236,25 +236,25 @@ ID3v2_frame_apic_content* parse_apic_content_from_frame(ID3v2_frame* frame)
 
     if(content==NULL)
     {
-      E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
       return NULL;
     }
     
     content->encoding = frame->data[0];
 
-    if(content->encoding==UTF_16_ENCODING_WITH_BOM && !has_bom(content->description))
-      content->encoding = UTF_16_ENCODING_WITHOUT_BOM;
+    if(content->encoding==ID3V2_UTF_16_ENCODING_WITH_BOM && !has_bom(content->description))
+      content->encoding = ID3V2_UTF_16_ENCODING_WITHOUT_BOM;
 
     content->mime_type = frame->data+offset;
 
-    if(frame->version==ID3v22)
+    if(frame->version==ID3V22)
     {
       // id3 v2.2 mime types are always (!) exactly 3 bytes long, without the terminator
       content->mime_type_size = 3;
     }
     else
     {
-      content->mime_type_size=get_mime_type_size(content->mime_type);
+      content->mime_type_size=get_mime_type_size_from_buffer(content->mime_type);
     }
 
     offset += content->mime_type_size;
@@ -263,7 +263,7 @@ ID3v2_frame_apic_content* parse_apic_content_from_frame(ID3v2_frame* frame)
 
     content->description = frame->data+ ++offset;
 
-    if (content->encoding == UTF_16_ENCODING_WITH_BOM || content->encoding==UTF_16_ENCODING_WITHOUT_BOM)
+    if (content->encoding == ID3V2_UTF_16_ENCODING_WITH_BOM || content->encoding==ID3V2_UTF_16_ENCODING_WITHOUT_BOM)
     {
       /* skip UTF-16 description */
       // a bit more understandable:
@@ -285,15 +285,15 @@ ID3v2_frame_apic_content* parse_apic_content_from_frame(ID3v2_frame* frame)
   
     content->picture_size = frame->size - offset;
     content->data= frame->data + offset;
-    E_SUCCESS;    
 
+    E_SUCCESS;    
 
     return content;
 }
 
-void add_frame_to_tag(ID3v2_tag *tag, ID3v2_frame *frame)
+void add_frame_to_tag(id3v2_tag *tag, id3v2_frame *frame)
 {
-  ID3v2_frame *last_frame;
+  id3v2_frame *last_frame;
 
   if(tag->frame == NULL)
   {
@@ -309,15 +309,15 @@ void add_frame_to_tag(ID3v2_tag *tag, ID3v2_frame *frame)
 
 }
 
-ID3v2_frame *get_frame_from_tag(ID3v2_tag *tag, char *frame_id)
+id3v2_frame *get_frame_from_tag(id3v2_tag *tag, char *frame_id)
 {
-  char tmp_id[ID3_FRAME_ID];
-  ID3v2_frame *matching_frame;
+  char tmp_id[ID3V2_FRAME_ID];
+  id3v2_frame *matching_frame;
 
   if(tag->frame == NULL)
   {
     // no frames in tag, return nothing
-    E_FAIL(ID3_ERROR_NOT_FOUND);
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
     return NULL;
   }
 
@@ -326,20 +326,20 @@ ID3v2_frame *get_frame_from_tag(ID3v2_tag *tag, char *frame_id)
   while(matching_frame != NULL)
   {
     // we will copy the id here so we can adjust it if necessary
-    memcpy(tmp_id, frame_id, ID3_FRAME_ID);
+    memcpy(tmp_id, frame_id, ID3V2_FRAME_ID);
 
-    if(matching_frame->version==ID3v22)
+    if(matching_frame->version==ID3V22)
       // since id3 v22 only has 3-byte identifiers, we will replace the fourth sign (if available) with the empty sign
       tmp_id[3]='\0';
 
-    if(memcmp(matching_frame->frame_id, tmp_id, 4)==0)
+    if(memcmp(matching_frame->frame_id, tmp_id, ID3V2_FRAME_ID)==0)
       break; 
 
     matching_frame = matching_frame->next;
   }
 
   if(matching_frame == NULL)
-    E_FAIL(ID3_ERROR_NOT_FOUND);
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
   else
     E_SUCCESS;
 

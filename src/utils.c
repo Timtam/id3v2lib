@@ -73,10 +73,10 @@ int syncint_decode(int value)
     return result;
 }
 
-void free_tag(ID3v2_tag* tag)
+void free_tag(id3v2_tag* tag)
 {
-    ID3v2_frame *frame;
-    ID3v2_frame *next_frame;
+    id3v2_frame *frame;
+    id3v2_frame *next_frame;
 
     free(tag->tag_header);
     frame = tag->frame;
@@ -94,11 +94,11 @@ char* get_mime_type_from_filename(const char* filename)
 {
     if(strcmp(strrchr(filename, '.') + 1, "png") == 0)
     {
-        return PNG_MIME_TYPE;
+        return ID3V2_PNG_MIME_TYPE;
     }
     else
     {
-        return JPG_MIME_TYPE;
+        return ID3V2_JPG_MIME_TYPE;
     }
 }
 

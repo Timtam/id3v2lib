@@ -13,21 +13,21 @@
 
 #include "id3v2lib.h"
 
-ID3v2_tag* load_tag_from_file(const char* file_name)
+id3v2_tag* load_tag_from_file(const char* file_name)
 {
     char *buffer;
     int count;
     FILE *file;
-    ID3v2_header *header;
+    id3v2_header *header;
     int *offsets;
-    ID3v2_tag *tag;
+    id3v2_tag *tag;
     int tag_size;
 
     file=fopen(file_name, "rb");
 
     if(file==NULL)
     {
-      E_FAIL(ID3_ERROR_UNABLE_TO_OPEN);
+      E_FAIL(ID3V2_ERROR_UNABLE_TO_OPEN);
       return NULL;
     }
 
@@ -37,7 +37,7 @@ ID3v2_tag* load_tag_from_file(const char* file_name)
     // no headers found?
     if(count==0)
     {
-      E_FAIL(ID3_ERROR_NOT_FOUND);
+      E_FAIL(ID3V2_ERROR_NOT_FOUND);
       fclose(file);
       return NULL;
     }
@@ -53,7 +53,7 @@ ID3v2_tag* load_tag_from_file(const char* file_name)
     if(header==NULL)
     {
       // whatever went wrong here, since we already found a header there
-      E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
       fclose(file);
       return NULL;
     }
@@ -66,7 +66,7 @@ ID3v2_tag* load_tag_from_file(const char* file_name)
     buffer = (char*) malloc((10+tag_size) * sizeof(char));
     if(buffer == NULL)
     {
-        E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
+        E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
         fclose(file);
         return NULL;
     }
@@ -84,27 +84,27 @@ ID3v2_tag* load_tag_from_file(const char* file_name)
     return tag;
 }
 
-ID3v2_tag* load_tag_from_buffer(char *bytes, int length)
+id3v2_tag* load_tag_from_buffer(char *bytes, int length)
 {
     // Declaration
     char *c_bytes;
-    ID3v2_frame *frame;
-    ID3v2_tag* tag;
-    ID3v2_header* tag_header;
+    id3v2_frame *frame;
+    id3v2_tag* tag;
+    id3v2_header* tag_header;
 
     // Initialization
     tag_header = get_header_from_buffer(bytes, length);
 
     if(tag_header == NULL) // no valid header found
     {
-      E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
       return NULL;
     }
 
-    if(get_tag_version(tag_header) == NO_COMPATIBLE_TAG)
+    if(get_tag_version(tag_header) == ID3V2_NO_COMPATIBLE_TAG)
     {
         // no supported id3 tag found
-        E_FAIL(ID3_ERROR_INCOMPATIBLE_TAG);
+        E_FAIL(ID3V2_ERROR_INCOMPATIBLE_TAG);
         free(tag_header);
         return NULL;
     }
@@ -112,7 +112,7 @@ ID3v2_tag* load_tag_from_buffer(char *bytes, int length)
     if(length < tag_header->tag_size+10)
     {
         // Not enough bytes provided to parse completely.
-        E_FAIL(ID3_ERROR_INSUFFICIENT_DATA);
+        E_FAIL(ID3V2_ERROR_INSUFFICIENT_DATA);
         free(tag_header);
         return NULL;
     }
@@ -121,7 +121,7 @@ ID3v2_tag* load_tag_from_buffer(char *bytes, int length)
 
     if(tag == NULL)
     {
-        E_FAIL(ID3_ERROR_MEMORY_ALLOCATION);
+        E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
         return NULL;
     }
 
@@ -194,9 +194,8 @@ void remove_tag(const char* file_name)
     fclose(temp_file);
 
 }
-*/
 
-void write_header(ID3v2_header* tag_header, FILE* file)
+void write_header(id3v2_header* tag_header, FILE* file)
 {
     fwrite("ID3", 3, 1, file);
     fwrite(&tag_header->major_version, 1, 1, file);
@@ -295,134 +294,136 @@ void set_tag(const char* file_name, ID3v2_tag* tag)
     fclose(file);
     fclose(temp_file);
 }
+*/
 
 /**
  * Getter functions
  */
-ID3v2_frame* tag_get_title(ID3v2_tag* tag)
+id3v2_frame* tag_get_title(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
 
-    return get_frame(tag, TITLE_FRAME_ID(get_tag_version(tag->tag_header)));
+    return get_frame_from_tag(tag, ID3V2_TITLE_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
-ID3v2_frame* tag_get_artist(ID3v2_tag* tag)
+id3v2_frame* tag_get_artist(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
 
-    return get_frame(tag, ARTIST_FRAME_ID(get_tag_version(tag->tag_header)));
+    return get_frame_from_tag(tag, ID3V2_ARTIST_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
-ID3v2_frame* tag_get_album(ID3v2_tag* tag)
+id3v2_frame* tag_get_album(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
 
-    return get_frame(tag, ALBUM_FRAME_ID(get_tag_version(tag->tag_header)));
+    return get_frame_from_tag(tag, ID3V2_ALBUM_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
-ID3v2_frame* tag_get_album_artist(ID3v2_tag* tag)
+id3v2_frame* tag_get_album_artist(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
 
-    return get_frame(tag, ALBUM_ARTIST_FRAME_ID(get_tag_version(tag->tag_header)));
+    return get_frame_from_tag(tag, ID3V2_ALBUM_ARTIST_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
-ID3v2_frame* tag_get_genre(ID3v2_tag* tag)
+id3v2_frame* tag_get_genre(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
 
-    return get_frame(tag, GENRE_FRAME_ID(get_tag_version(tag->tag_header)));
+    return get_frame_from_tag(tag, ID3V2_GENRE_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
-ID3v2_frame* tag_get_track(ID3v2_tag* tag)
+id3v2_frame* tag_get_track(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
 
-    return get_frame(tag, TRACK_FRAME_ID(get_tag_version(tag->tag_header)));
+    return get_frame_from_tag(tag, ID3V2_TRACK_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
-ID3v2_frame* tag_get_year(ID3v2_tag* tag)
+id3v2_frame* tag_get_year(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
 
-    return get_frame(tag, YEAR_FRAME_ID(get_tag_version(tag->tag_header)));
+    return get_frame_from_tag(tag, ID3V2_YEAR_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
-ID3v2_frame* tag_get_comment(ID3v2_tag* tag)
+id3v2_frame* tag_get_comment(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
 
-    return get_frame(tag, COMMENT_FRAME_ID(get_tag_version(tag->tag_header)));
+    return get_frame_from_tag(tag, ID3V2_COMMENT_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
-ID3v2_frame* tag_get_disc_number(ID3v2_tag* tag)
+id3v2_frame* tag_get_disc_number(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
 
-    return get_frame(tag, DISC_NUMBER_FRAME_ID(get_tag_version(tag->tag_header)));
+    return get_frame_from_tag(tag, ID3V2_DISC_NUMBER_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
-ID3v2_frame* tag_get_composer(ID3v2_tag* tag)
+id3v2_frame* tag_get_composer(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
 
-    return get_frame(tag, COMPOSER_FRAME_ID(get_tag_version(tag->tag_header)));
+    return get_frame_from_tag(tag, ID3V2_COMPOSER_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
-ID3v2_frame* tag_get_album_cover(ID3v2_tag* tag)
+id3v2_frame* tag_get_album_cover(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
-        E_FAIL(ID3_ERROR_NOT_FOUND);
+        E_FAIL(ID3V2_ERROR_NOT_FOUND);
         return NULL;
     }
 
-    return get_frame(tag, ALBUM_COVER_FRAME_ID(get_tag_version(tag->tag_header)));
+    return get_frame_from_tag(tag, ID3V2_ALBUM_COVER_FRAME_ID(get_tag_version(tag->tag_header)));
 }
 
 /**
  * Setter functions
- */
+
+ * since rebuilding commented out
 void set_text_frame(char* data, char encoding, char* frame_id, ID3v2_frame* frame)
 {
     // Set frame id and size
@@ -608,8 +609,9 @@ void tag_set_album_cover_from_bytes(char* album_cover_bytes, char* mimetype, int
     if( ! (album_cover_frame = tag_get_album_cover(tag)))
     {
         album_cover_frame = new_frame();
-        add_frame(tag, album_cover_frame);
+        add_frame_to_tag(tag, album_cover_frame);
     }
 
     set_album_cover_frame(album_cover_bytes, mimetype, picture_size, album_cover_frame);
 }
+*/

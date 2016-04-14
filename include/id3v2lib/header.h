@@ -17,11 +17,11 @@
 #include "utils.h"
 
 void find_headers_in_file(FILE *file, int **location, int *size);
-int has_id3v2tag(ID3v2_header* tag_header);
+int has_id3v2tag(id3v2_header* tag_header);
 int _has_id3v2tag(char* raw_header);
-ID3v2_header* get_header_from_file(FILE *file, int offset);
-ID3v2_header* get_header_from_buffer(char* buffer, int length);
-int get_tag_version(ID3v2_header* tag_header);
-void edit_tag_size(ID3v2_tag* tag);
+id3v2_header* get_header_from_file(FILE *file, int offset);
+id3v2_header* get_header_from_buffer(char* buffer, int length);
+int get_tag_version(id3v2_header* tag_header);
+void edit_tag_size(id3v2_tag* tag);
 
 #endif

@@ -13,7 +13,7 @@
 
 #include "id3v2lib.h"
 
-int has_id3v2tag(ID3v2_header* tag_header)
+int has_id3v2tag(id3v2_header* tag_header)
 {
     if(memcmp(tag_header->tag, "ID3", 3) == 0)
     {
@@ -33,26 +33,28 @@ int _has_id3v2tag(char* raw_header)
     return 0;
 }
 
-ID3v2_header* get_header_from_file(FILE *file, int offset)
+id3v2_header* get_header_from_file(FILE *file, int offset)
 {
-    char buffer[ID3_HEADER];
+    char buffer[ID3V2_HEADER];
+
     if(file == NULL)
     {
-        perror("Error opening file");
+        E_FAIL(ID3V2_ERROR_UNABLE_TO_OPEN);
         return NULL;
     }
 
     fseek(file, offset, SEEK_SET);
 
-    fread(buffer, ID3_HEADER, 1, file);
-    return get_header_from_buffer(buffer, ID3_HEADER);
+    fread(buffer, ID3V2_HEADER, 1, file);
+    return get_header_from_buffer(buffer, ID3V2_HEADER);
 }
-ID3v2_header* get_header_from_buffer(char *buffer, int length)
+
+id3v2_header* get_header_from_buffer(char *buffer, int length)
 {
     int position = 0;
-    ID3v2_header *tag_header;
+    id3v2_header *tag_header;
 
-    if(length < ID3_HEADER) {
+    if(length < ID3V2_HEADER) {
         return NULL;
     }
     if( ! _has_id3v2tag(buffer))
@@ -61,10 +63,10 @@ ID3v2_header* get_header_from_buffer(char *buffer, int length)
     }
     tag_header = new_header();
 
-    memcpy(tag_header->tag, buffer, ID3_HEADER_TAG);
-    tag_header->major_version = buffer[position += ID3_HEADER_TAG];
-    tag_header->minor_version = buffer[position += ID3_HEADER_VERSION];
-    tag_header->flags = buffer[position += ID3_HEADER_REVISION];
+    memcpy(tag_header->tag, buffer, ID3V2_HEADER_TAG);
+    tag_header->major_version = buffer[position += ID3V2_HEADER_TAG];
+    tag_header->minor_version = buffer[position += ID3V2_HEADER_VERSION];
+    tag_header->flags = buffer[position += ID3V2_HEADER_REVISION];
 
     // checking if the as unused declared flags are set in any way
     // this would mean we stop parsing here, since we might encounter things we don't know how to handle
@@ -77,11 +79,11 @@ ID3v2_header* get_header_from_buffer(char *buffer, int length)
       return NULL;
     }
 
-    tag_header->tag_size = syncint_decode(btoi(buffer, ID3_HEADER_SIZE, position += ID3_HEADER_FLAGS));
+    tag_header->tag_size = syncint_decode(btoi(buffer, ID3V2_HEADER_SIZE, position += ID3V2_HEADER_FLAGS));
 
     if(tag_header->flags&(1<<6)==(1<<6))
       // an extended header exists, so we retrieve the actual size of it and save it into the struct
-      tag_header->extended_header_size = syncint_decode(btoi(buffer, ID3_EXTENDED_HEADER_SIZE, position += ID3_HEADER_SIZE));
+      tag_header->extended_header_size = syncint_decode(btoi(buffer, ID3V2_EXTENDED_HEADER_SIZE, position += ID3V2_HEADER_SIZE));
     else
       // no extended header existing
       tag_header->extended_header_size = 0;
@@ -93,23 +95,23 @@ ID3v2_header* get_header_from_buffer(char *buffer, int length)
     return tag_header;
 }
 
-int get_tag_version(ID3v2_header* tag_header)
+int get_tag_version(id3v2_header* tag_header)
 {
     if(tag_header->major_version == 3)
     {
-        return ID3v23;
+        return ID3V23;
     }
     else if(tag_header->major_version == 4)
     {
-        return ID3v24;
+        return ID3V24;
     }
     else if(tag_header->major_version == 2)
     {
-      return ID3v22;
+      return ID3V22;
     }
     else
     {
-        return NO_COMPATIBLE_TAG;
+        return ID3V2_NO_COMPATIBLE_TAG;
     }
 }
 
@@ -117,7 +119,7 @@ void find_headers_in_file(FILE *file, int **location, int *size)
 {
   char byte; // currently processing byte
   int count = 0; // amount of offsets found
-  ID3v2_header *header;
+  id3v2_header *header;
   char *header_bytes; // used to store the header bytes found
   int *offsets;
   char pattern_position = 0; // amount of pattern bytes found

@@ -24,7 +24,7 @@ unsigned int btoi(char* bytes, int size, int offset);
 char* itob(int integer);
 int syncint_encode(int value);
 int syncint_decode(int value);
-void free_tag(ID3v2_tag* tag);
+void free_tag(id3v2_tag* tag);
 char* get_mime_type_from_filename(const char* filename);
 
 // String functions

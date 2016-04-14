@@ -9,7 +9,7 @@
 
 #include "id3v2lib.h"
 
-unsigned short id3v2_error = ID3_OK;
+unsigned short id3v2_error = ID3V2_OK;
 
 unsigned short id3v2_get_error()
 {
