@@ -14,7 +14,7 @@
 
 #include "id3v2lib.h"
 
-ID3v2_frame* parse_frame(ID3v2_tag *tag, char *bytes)
+ID3v2_frame* parse_frame_from_tag(ID3v2_tag *tag, char *bytes)
 {
     ID3v2_frame* frame = new_frame();
     int offset = 0;
@@ -130,7 +130,7 @@ int get_frame_type(char* frame_id)
     }
 }
 
-ID3v2_frame_text_content* parse_text_frame_content(ID3v2_frame* frame)
+ID3v2_frame_text_content* parse_text_content_from_frame(ID3v2_frame* frame)
 {
     ID3v2_frame_text_content* content;
     if(frame == NULL)
@@ -160,7 +160,7 @@ ID3v2_frame_text_content* parse_text_frame_content(ID3v2_frame* frame)
     return content;
 }
 
-ID3v2_frame_comment_content* parse_comment_frame_content(ID3v2_frame* frame)
+ID3v2_frame_comment_content* parse_comment_content_from_frame(ID3v2_frame* frame)
 {
     ID3v2_frame_comment_content *content;
     int offset = 0;
@@ -209,7 +209,7 @@ ID3v2_frame_comment_content* parse_comment_frame_content(ID3v2_frame* frame)
     return content;
 }
 
-int get_mime_type_size(char* data)
+int get_mime_type_size_from_buffer(char* data)
 {
     int i =0;
 
@@ -221,7 +221,7 @@ int get_mime_type_size(char* data)
     return i;
 }
 
-ID3v2_frame_apic_content* parse_apic_frame_content(ID3v2_frame* frame)
+ID3v2_frame_apic_content* parse_apic_content_from_frame(ID3v2_frame* frame)
 {
     ID3v2_frame_apic_content *content;
     int offset = 1; // Skip ID3_FRAME_ENCODING
@@ -291,7 +291,7 @@ ID3v2_frame_apic_content* parse_apic_frame_content(ID3v2_frame* frame)
     return content;
 }
 
-void add_frame(ID3v2_tag *tag, ID3v2_frame *frame)
+void add_frame_to_tag(ID3v2_tag *tag, ID3v2_frame *frame)
 {
   ID3v2_frame *last_frame;
 
@@ -309,7 +309,7 @@ void add_frame(ID3v2_tag *tag, ID3v2_frame *frame)
 
 }
 
-ID3v2_frame *get_frame(ID3v2_tag *tag, char *frame_id)
+ID3v2_frame *get_frame_from_tag(ID3v2_tag *tag, char *frame_id)
 {
   char tmp_id[ID3_FRAME_ID];
   ID3v2_frame *matching_frame;
@@ -346,7 +346,7 @@ ID3v2_frame *get_frame(ID3v2_tag *tag, char *frame_id)
   return matching_frame;
 }
 
-char *synchronize_data(char *data, int size)
+char *synchronize_data_from_buffer(char *data, int size)
 {
   char check = 0; // indicated we'll have to inspect the next 2 bytes carefully
   int i;

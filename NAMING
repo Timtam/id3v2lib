@@ -1,0 +1,36 @@
+NAMING CONVENTIONS
+
+These rules are designed to
+ * make the code look identical, programmer-independency
+ * make it easier to understand a strangers code
+ * let the user know what he/she has to search for by providing an understandable naming system.
+
+EVERYTHING HAS TO BE EITHER LOWERCASE OR UPPERCASE, NOT BOTH AS MIXTURE
+
+All function calls, variables etc have to be lower case, only macros and macro-like constants (#define) must be upper case.
+
+SEPARATE WORDS IDENTICALLY
+
+Functions and variables consisting of multiple words need to be named after the words devided by a _ separator.
+
+CONSTRUCT VARIABLE AND FUNCTION NAMES LOGICALLY
+
+The user should know what he/she has to search for if he/she has an idea of what he/she wants to do.
+That means the function names must follow a logical construction order: a_b_c_d
+explanation:
+a is always a verb which defines what this function does, e.g. load, get, set, put, find...
+b is a noun which described the return value, e.g. tag, header, string, frame...
+c is a preposition giving the relation to d and what to do with it, e.g. on, from, with, of, in...
+d is the source object to get b from, e.g. file, buffer, string, header, frame, tag...
+a, b, c or d can also contain several words, in this case they should be devided by underscores too.
+Parts of this naming structuree can be left off or switched if it would otherwise be without sense, e.g. int find_bool_in_buffer(char *buffer) doesn't say the same like int buffer_has_bom(char *buffer), at least not since it actually doesn't say anything about what it is doing.
+
+Variables don't have a specified naming scheme, except the delimiter and that they should explain their purpose on their own.
+
+INDENTATION
+
+All code files should have the same indentation scheme and formatting style. For this purpose you'll find an indent.sh file in the root of this repository. Executing this will indent all code files the same way. Use this at least before submitting a pull request or releasing a new version, meaning tagging it with a new version number.
+
+Try to get a equally-looking codestyle into this project.
+
+This naming scheme was provided by Toni Barth (Timtam) and is free to be modivied and optimized later on.

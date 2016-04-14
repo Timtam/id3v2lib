@@ -138,11 +138,11 @@ ID3v2_tag* load_tag_from_buffer(char *bytes, int length)
     
     while((bytes - c_bytes) < tag_header->tag_size)
     {
-      frame=parse_frame(tag, bytes);
+      frame=parse_frame_from_tag(tag, bytes);
       if(frame != NULL) // a frame was found
       {
         if(frame->parsed) // and it got parsed
-          add_frame(tag, frame);
+          add_frame_to_tag(tag, frame);
         bytes += frame->size + 10;
         if(!(frame->parsed))
           free(frame);
