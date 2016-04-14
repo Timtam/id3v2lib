@@ -14,12 +14,12 @@
 
 #include "id3v2lib.h"
 
-id3v2_frame* parse_frame_from_tag(id3v2_tag *tag, char *bytes)
+id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
 {
-    id3v2_frame* frame = new_frame();
+    id3v2_frame* frame = id3v2_new_frame(tag);
     int offset = 0;
     char unsynchronisation = 0;
-    int version = get_tag_version(tag->tag_header);
+    int version = id3v2_get_tag_version(tag);
     
     if(frame == NULL)
       return NULL;
@@ -91,7 +91,7 @@ id3v2_frame* parse_frame_from_tag(id3v2_tag *tag, char *bytes)
     
     // Load frame data
     if(unsynchronisation)
-      frame->data = synchronize_data_from_buffer(bytes + offset, frame->size);
+      frame->data = _synchronize_data_from_buffer(bytes + offset, frame->size);
     else
       frame->data= (char *)malloc(frame->size * sizeof(char));
 
@@ -104,20 +104,27 @@ id3v2_frame* parse_frame_from_tag(id3v2_tag *tag, char *bytes)
 
     memcpy(frame->data, bytes + offset, frame->size);
     
-    frame->version = version;
     // the frame was successfully parsed
     frame->parsed = 1;
 
     return frame;
 }
 
-int get_frame_type(char* frame_id)
+int id3v2_get_frame_type(id3v2_frame *frame)
 {
+    if(frame == NULL)
+    {
+      E_FAIL(ID3V2_ERROR_NOT_FOUND);
+      return ID3V2_INVALID_FRAME;
+    }
+
+    E_SUCCESS;
+
     // some exceptions, for example...
-    if(strcmp(frame_id, "PIC\0")==0) // not called APIC in v22, but PIC instead
+    if(strcmp(frame->frame_id, "PIC\0")==0) // not called APIC in v22, but PIC instead
       return ID3V2_APIC_FRAME;
 
-    switch(frame_id[0])
+    switch(frame->frame_id[0])
     {
         case 'T':
             return ID3V2_TEXT_FRAME;
@@ -130,7 +137,7 @@ int get_frame_type(char* frame_id)
     }
 }
 
-id3v2_frame_text_content* parse_text_content_from_frame(id3v2_frame* frame)
+id3v2_frame_text_content* id3v2_parse_text_content_from_frame(id3v2_frame* frame)
 {
     id3v2_frame_text_content* content;
     if(frame == NULL)
@@ -139,13 +146,10 @@ id3v2_frame_text_content* parse_text_content_from_frame(id3v2_frame* frame)
         return NULL;
     }
     
-    content = new_text_content();
+    content = id3v2_new_text_content();
 
     if(content==NULL)
-    {
-      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
       return NULL;
-    }
 
     content->encoding = frame->data[0];
 
@@ -160,7 +164,7 @@ id3v2_frame_text_content* parse_text_content_from_frame(id3v2_frame* frame)
     return content;
 }
 
-id3v2_frame_comment_content* parse_comment_content_from_frame(id3v2_frame* frame)
+id3v2_frame_comment_content* id3v2_parse_comment_content_from_frame(id3v2_frame* frame)
 {
     id3v2_frame_comment_content *content;
     int offset = 0;
@@ -171,13 +175,10 @@ id3v2_frame_comment_content* parse_comment_content_from_frame(id3v2_frame* frame
         return NULL;
     }
     
-    content = new_comment_content();
+    content = id3v2_new_comment_content();
 
     if(content==NULL)
-    {
-      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
       return NULL;
-    }
     
     content->text->encoding = frame->data[0];
     offset += ID3V2_FRAME_ENCODING;
@@ -209,7 +210,7 @@ id3v2_frame_comment_content* parse_comment_content_from_frame(id3v2_frame* frame
     return content;
 }
 
-int get_mime_type_size_from_buffer(char* data)
+int _get_mime_type_size_from_buffer(char* data)
 {
     int i =0;
 
@@ -221,7 +222,7 @@ int get_mime_type_size_from_buffer(char* data)
     return i;
 }
 
-id3v2_frame_apic_content* parse_apic_content_from_frame(id3v2_frame* frame)
+id3v2_frame_apic_content* id3v2_parse_apic_content_from_frame(id3v2_frame* frame)
 {
     id3v2_frame_apic_content *content;
     int offset = 1; // Skip ID3_FRAME_ENCODING
@@ -232,13 +233,10 @@ id3v2_frame_apic_content* parse_apic_content_from_frame(id3v2_frame* frame)
         return NULL;
     }
     
-    content = new_apic_content();
+    content = id3v2_new_apic_content();
 
     if(content==NULL)
-    {
-      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
       return NULL;
-    }
     
     content->encoding = frame->data[0];
 
@@ -254,7 +252,7 @@ id3v2_frame_apic_content* parse_apic_content_from_frame(id3v2_frame* frame)
     }
     else
     {
-      content->mime_type_size=get_mime_type_size_from_buffer(content->mime_type);
+      content->mime_type_size=_get_mime_type_size_from_buffer(content->mime_type);
     }
 
     offset += content->mime_type_size;
@@ -291,7 +289,7 @@ id3v2_frame_apic_content* parse_apic_content_from_frame(id3v2_frame* frame)
     return content;
 }
 
-void add_frame_to_tag(id3v2_tag *tag, id3v2_frame *frame)
+void id3v2_add_frame_to_tag(id3v2_tag *tag, id3v2_frame *frame)
 {
   id3v2_frame *last_frame;
 
@@ -309,7 +307,7 @@ void add_frame_to_tag(id3v2_tag *tag, id3v2_frame *frame)
 
 }
 
-id3v2_frame *get_frame_from_tag(id3v2_tag *tag, char *frame_id)
+id3v2_frame *id3v2_get_frame_from_tag(id3v2_tag *tag, char *frame_id)
 {
   char tmp_id[ID3V2_FRAME_ID];
   id3v2_frame *matching_frame;
@@ -346,7 +344,7 @@ id3v2_frame *get_frame_from_tag(id3v2_tag *tag, char *frame_id)
   return matching_frame;
 }
 
-char *synchronize_data_from_buffer(char *data, int size)
+char *_synchronize_data_from_buffer(char *data, int size)
 {
   char check = 0; // indicated we'll have to inspect the next 2 bytes carefully
   int i;

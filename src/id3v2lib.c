@@ -13,17 +13,14 @@
 
 #include "id3v2lib.h"
 
-id3v2_tag* load_tag_from_file(const char* file_name)
+id3v2_tag* id3v2_load_tag_from_file(FILE *file)
 {
     char *buffer;
     int count;
-    FILE *file;
     id3v2_header *header;
     int *offsets;
     id3v2_tag *tag;
     int tag_size;
-
-    file=fopen(file_name, "rb");
 
     if(file==NULL)
     {
@@ -32,13 +29,12 @@ id3v2_tag* load_tag_from_file(const char* file_name)
     }
 
     // parse file for id3 tags
-    find_headers_in_file(file, &offsets, &count);
+    _find_headers_in_file(file, &offsets, &count);
 
     // no headers found?
     if(count==0)
     {
       E_FAIL(ID3V2_ERROR_NOT_FOUND);
-      fclose(file);
       return NULL;
     }
 
@@ -48,13 +44,12 @@ id3v2_tag* load_tag_from_file(const char* file_name)
       // tag replacing
     // for now, we will just take the first tag found in the file
 
-    header = get_header_from_file(file, offsets[0]);
+    header = _get_header_from_file(file, offsets[0]);
 
     if(header==NULL)
     {
       // whatever went wrong here, since we already found a header there
       E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
-      fclose(file);
       return NULL;
     }
 
@@ -67,24 +62,22 @@ id3v2_tag* load_tag_from_file(const char* file_name)
     if(buffer == NULL)
     {
         E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
-        fclose(file);
         return NULL;
     }
 
     fseek(file, offsets[0], SEEK_SET);
 
     fread(buffer, tag_size+10, 1, file);
-    fclose(file);
     free(offsets);
 
     //parse free and return
-    tag = load_tag_from_buffer(buffer, tag_size+10);
+    tag = id3v2_load_tag_from_buffer(buffer, tag_size+10);
     free(buffer);
 
     return tag;
 }
 
-id3v2_tag* load_tag_from_buffer(char *bytes, int length)
+id3v2_tag* id3v2_load_tag_from_buffer(char *bytes, int length)
 {
     // Declaration
     char *c_bytes;
@@ -93,20 +86,12 @@ id3v2_tag* load_tag_from_buffer(char *bytes, int length)
     id3v2_header* tag_header;
 
     // Initialization
-    tag_header = get_header_from_buffer(bytes, length);
+    tag_header = _get_header_from_buffer(bytes, length);
 
     if(tag_header == NULL) // no valid header found
     {
       E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
       return NULL;
-    }
-
-    if(get_tag_version(tag_header) == ID3V2_NO_COMPATIBLE_TAG)
-    {
-        // no supported id3 tag found
-        E_FAIL(ID3V2_ERROR_INCOMPATIBLE_TAG);
-        free(tag_header);
-        return NULL;
     }
 
     if(length < tag_header->tag_size+10)
@@ -117,7 +102,7 @@ id3v2_tag* load_tag_from_buffer(char *bytes, int length)
         return NULL;
     }
 
-    tag = new_tag();
+    tag = id3v2_new_tag();
 
     if(tag == NULL)
     {
@@ -127,6 +112,14 @@ id3v2_tag* load_tag_from_buffer(char *bytes, int length)
 
     // Associations
     tag->tag_header = tag_header;
+
+    if(id3v2_get_tag_version(tag) == ID3V2_NO_COMPATIBLE_TAG)
+    {
+        // no supported id3 tag found
+        E_FAIL(ID3V2_ERROR_INCOMPATIBLE_TAG);
+        free_tag(tag);
+        return NULL;
+    }
 
     // move the bytes pointer to the correct position
     bytes+=10; // skip header
@@ -138,11 +131,11 @@ id3v2_tag* load_tag_from_buffer(char *bytes, int length)
     
     while((bytes - c_bytes) < tag_header->tag_size)
     {
-      frame=parse_frame_from_tag(tag, bytes);
+      frame=_parse_frame_from_tag(tag, bytes);
       if(frame != NULL) // a frame was found
       {
         if(frame->parsed) // and it got parsed
-          add_frame_to_tag(tag, frame);
+          id3v2_add_frame_to_tag(tag, frame);
         bytes += frame->size + 10;
         if(!(frame->parsed))
           free(frame);
@@ -251,7 +244,7 @@ void set_tag(const char* file_name, ID3v2_tag* tag)
     old_size = tag->tag_header->tag_size;
 
     // Set the new tag header
-    tag->tag_header = new_header();
+    tag->tag_header = _new_header();
     memcpy(tag->tag_header->tag, "ID3", 3);
     tag->tag_header->major_version = '\x03';
     tag->tag_header->minor_version = '\x00';
@@ -299,7 +292,7 @@ void set_tag(const char* file_name, ID3v2_tag* tag)
 /**
  * Getter functions
  */
-id3v2_frame* tag_get_title(id3v2_tag* tag)
+id3v2_frame* id3v2_get_title_frame_from_tag(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
@@ -307,10 +300,10 @@ id3v2_frame* tag_get_title(id3v2_tag* tag)
         return NULL;
     }
 
-    return get_frame_from_tag(tag, ID3V2_TITLE_FRAME_ID(get_tag_version(tag->tag_header)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_TITLE_FRAME_ID(id3v2_get_tag_version(tag)));
 }
 
-id3v2_frame* tag_get_artist(id3v2_tag* tag)
+id3v2_frame* id3v2_get_artist_frame_from_tag(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
@@ -318,10 +311,10 @@ id3v2_frame* tag_get_artist(id3v2_tag* tag)
         return NULL;
     }
 
-    return get_frame_from_tag(tag, ID3V2_ARTIST_FRAME_ID(get_tag_version(tag->tag_header)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_ARTIST_FRAME_ID(id3v2_get_tag_version(tag)));
 }
 
-id3v2_frame* tag_get_album(id3v2_tag* tag)
+id3v2_frame* id3v2_get_album_frame_from_tag(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
@@ -329,10 +322,10 @@ id3v2_frame* tag_get_album(id3v2_tag* tag)
         return NULL;
     }
 
-    return get_frame_from_tag(tag, ID3V2_ALBUM_FRAME_ID(get_tag_version(tag->tag_header)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_ALBUM_FRAME_ID(id3v2_get_tag_version(tag)));
 }
 
-id3v2_frame* tag_get_album_artist(id3v2_tag* tag)
+id3v2_frame* id3v2_get_album_artist_frame_from_tag(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
@@ -340,10 +333,10 @@ id3v2_frame* tag_get_album_artist(id3v2_tag* tag)
         return NULL;
     }
 
-    return get_frame_from_tag(tag, ID3V2_ALBUM_ARTIST_FRAME_ID(get_tag_version(tag->tag_header)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_ALBUM_ARTIST_FRAME_ID(id3v2_get_tag_version(tag)));
 }
 
-id3v2_frame* tag_get_genre(id3v2_tag* tag)
+id3v2_frame* id3v2_get_genre_frame_from_tag(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
@@ -351,10 +344,10 @@ id3v2_frame* tag_get_genre(id3v2_tag* tag)
         return NULL;
     }
 
-    return get_frame_from_tag(tag, ID3V2_GENRE_FRAME_ID(get_tag_version(tag->tag_header)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_GENRE_FRAME_ID(id3v2_get_tag_version(tag)));
 }
 
-id3v2_frame* tag_get_track(id3v2_tag* tag)
+id3v2_frame* id3v2_get_track_frame_from_tag(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
@@ -362,10 +355,10 @@ id3v2_frame* tag_get_track(id3v2_tag* tag)
         return NULL;
     }
 
-    return get_frame_from_tag(tag, ID3V2_TRACK_FRAME_ID(get_tag_version(tag->tag_header)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_TRACK_FRAME_ID(id3v2_get_tag_version(tag)));
 }
 
-id3v2_frame* tag_get_year(id3v2_tag* tag)
+id3v2_frame* id3v2_get_year_frame_from_tag(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
@@ -373,10 +366,10 @@ id3v2_frame* tag_get_year(id3v2_tag* tag)
         return NULL;
     }
 
-    return get_frame_from_tag(tag, ID3V2_YEAR_FRAME_ID(get_tag_version(tag->tag_header)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_YEAR_FRAME_ID(id3v2_get_tag_version(tag)));
 }
 
-id3v2_frame* tag_get_comment(id3v2_tag* tag)
+id3v2_frame* id3v2_get_comment_frame_from_tag(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
@@ -384,10 +377,10 @@ id3v2_frame* tag_get_comment(id3v2_tag* tag)
         return NULL;
     }
 
-    return get_frame_from_tag(tag, ID3V2_COMMENT_FRAME_ID(get_tag_version(tag->tag_header)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_COMMENT_FRAME_ID(id3v2_get_tag_version(tag)));
 }
 
-id3v2_frame* tag_get_disc_number(id3v2_tag* tag)
+id3v2_frame* id3v2_get_disc_number_frame_from_tag(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
@@ -395,10 +388,10 @@ id3v2_frame* tag_get_disc_number(id3v2_tag* tag)
         return NULL;
     }
 
-    return get_frame_from_tag(tag, ID3V2_DISC_NUMBER_FRAME_ID(get_tag_version(tag->tag_header)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_DISC_NUMBER_FRAME_ID(id3v2_get_tag_version(tag)));
 }
 
-id3v2_frame* tag_get_composer(id3v2_tag* tag)
+id3v2_frame* id3v2_get_composer_frame_from_tag(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
@@ -406,10 +399,10 @@ id3v2_frame* tag_get_composer(id3v2_tag* tag)
         return NULL;
     }
 
-    return get_frame_from_tag(tag, ID3V2_COMPOSER_FRAME_ID(get_tag_version(tag->tag_header)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_COMPOSER_FRAME_ID(id3v2_get_tag_version(tag)));
 }
 
-id3v2_frame* tag_get_album_cover(id3v2_tag* tag)
+id3v2_frame* id3v2_get_album_cover_frame_from_tag(id3v2_tag* tag)
 {
     if(tag == NULL)
     {
@@ -417,7 +410,7 @@ id3v2_frame* tag_get_album_cover(id3v2_tag* tag)
         return NULL;
     }
 
-    return get_frame_from_tag(tag, ID3V2_ALBUM_COVER_FRAME_ID(get_tag_version(tag->tag_header)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_ALBUM_COVER_FRAME_ID(id3v2_get_tag_version(tag)));
 }
 
 /**

@@ -13,15 +13,33 @@
 
 #include "id3v2lib.h"
 
-id3v2_tag* new_tag()
+id3v2_tag* id3v2_new_tag()
 {
     id3v2_tag* tag = (id3v2_tag*) malloc(sizeof(id3v2_tag));
-    tag->tag_header = new_header();
+
+    if(tag == NULL)
+    {
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+      return NULL;
+    }
+
+    tag->tag_header = _new_header();
+
+    if(tag->tag_header == NULL)
+    {
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+      free(tag);
+      return NULL;
+    }
+
     tag->frame = NULL;
+
+    E_SUCCESS;
+
     return tag;
 }
 
-id3v2_header* new_header()
+id3v2_header* _new_header()
 {
     id3v2_header* tag_header = (id3v2_header*) malloc(sizeof(id3v2_header));
     if(tag_header != NULL)
@@ -36,28 +54,73 @@ id3v2_header* new_header()
     return tag_header;
 }
 
-id3v2_frame* new_frame()
+id3v2_frame* id3v2_new_frame(id3v2_tag *tag)
 {
     id3v2_frame* frame = (id3v2_frame*) malloc(sizeof(id3v2_frame));
+
+    if(frame == NULL)
+    {
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+      return NULL;
+    }
+
     frame->next = NULL;
+    frame->version = id3v2_get_tag_version(tag);
+
+    E_SUCCESS;
+
     return frame;
 }
 
-id3v2_frame_text_content* new_text_content()
+id3v2_frame_text_content* id3v2_new_text_content()
 {
     id3v2_frame_text_content* content = (id3v2_frame_text_content*) malloc(sizeof(id3v2_frame_text_content));
+
+    if(content == NULL)
+    {
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+      return NULL;
+    }
+
+    E_SUCCESS;
+
     return content;
 }
 
-id3v2_frame_comment_content* new_comment_content()
+id3v2_frame_comment_content* id3v2_new_comment_content()
 {
     id3v2_frame_comment_content* content = (id3v2_frame_comment_content*) malloc(sizeof(id3v2_frame_comment_content));
-    content->text = new_text_content();
+
+    if(content == NULL)
+    {
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+      return NULL;
+    }
+
+    content->text = id3v2_new_text_content();
+
+    if(content->text == NULL)
+    {
+      free(content);
+      return NULL;
+    }
+
+    E_SUCCESS;
+
     return content;
 }
 
-id3v2_frame_apic_content* new_apic_content()
+id3v2_frame_apic_content* id3v2_new_apic_content()
 {
     id3v2_frame_apic_content* content = (id3v2_frame_apic_content*) malloc(sizeof(id3v2_frame_apic_content));
+
+    if(content == NULL)
+    {
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+      return NULL;
+    }
+
+    E_SUCCESS;
+
     return content;
 }

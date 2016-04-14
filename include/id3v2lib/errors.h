@@ -11,7 +11,7 @@
 #define id3v2lib_errors_h
 
 unsigned short id3v2_get_error();
-void id3v2_set_error(unsigned short err);
+void _set_error(unsigned short err);
 
 // error constants
 
@@ -26,8 +26,8 @@ enum
 };
 
 // some helper macros
-#define E_FAIL(x) id3v2_set_error(x)
+#define E_FAIL(x) _set_error(x)
 #define E_GET id3v2_get_error()
-#define E_SUCCESS id3v2_set_error(ID3V2_OK)
+#define E_SUCCESS _set_error(ID3V2_OK)
 
 #endif

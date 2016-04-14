@@ -1,17 +1,15 @@
-NAMING CONVENTIONS
+NAMING AND CODING CONVENTIONS
 
 These rules are designed to
  * make the code look identical, programmer-independency
  * make it easier to understand a strangers code
- * let the user know what he/she has to search for by providing an understandable naming system.
+ * let the user know what he/she has to search for by providing an understandable naming system
+ * provide a both user-friendly and powerful programming library which is easily extendable.
 
 EVERYTHING HAS TO BE EITHER LOWERCASE OR UPPERCASE, NOT BOTH AS MIXTURE
 
 All function calls and variables have consequently to be lower case.
-
-CONSTANTS
-
-All constants, macro and non-macro, have to be consequently upper case. All constants therefore have to add the prefix ID3V2_ to prevent name conflicts in larger projects without namespace capabilities.
+All constants, macro and non-macro, have to be consequently upper case.
 
 SEPARATE WORDS IDENTICALLY
 
@@ -27,7 +25,9 @@ b is a noun which described the return value, e.g. tag, header, string, frame...
 c is a preposition giving the relation to d and what to do with it, e.g. on, from, with, of, in...
 d is the source object to get b from, e.g. file, buffer, string, header, frame, tag...
 a, b, c or d can also contain several words, in this case they should be devided by underscores too.
-Parts of this naming structuree can be left off or switched if it would otherwise be without sense, e.g. int id3_find_bool_in_buffer(char *buffer) doesn't say the same like int id3_buffer_has_bom(char *buffer), at least not since it actually doesn't say anything about what it is doing.
+Parts of this naming structuree can be left off or switched if it would otherwise be without sense, e.g. int id3v2_find_bool_in_buffer(char *buffer) doesn't say the same like int id3v2_buffer_has_bom(char *buffer), at least not since it actually doesn't say anything about what it is doing.
+This pattern is only to be used for functions which are ment to be used by the public. Internal functions only can drop the id3v2 prefix and therefore just start with _. the a_b_c_d pattern though should be used here too.
+All external functions and all constants should start with id3v2_ (constants upper case, functions lower case of course).
 
 Variables don't have a specified naming scheme, except the delimiter and that they should explain their purpose on their own.
 
@@ -35,6 +35,12 @@ INDENTATION
 
 All code files should have the same indentation scheme and formatting style. For this purpose you'll find an indent.sh file in the root of this repository. Executing this will indent all code files the same way. Use this at least before submitting a pull request or releasing a new version, meaning tagging it with a new version number.
 
-Try to get a equally-looking codestyle into this project.
+ERROR INFORMATION SYSTEM
+
+All id3v2_ functions ment to be used by the public should implement the error system which informs the user about the reason why a function failed.
+You can use the E_FAIL macro with the relevant error code or easily the E_SUCCESS macros for your convinience.
+Define new error codes in the relevant enum in errors.h, but prevent defining multiple error codes with the same meaning.
+
+Try to get a fluid codestyle into this project.
 
 This naming scheme was provided by Toni Barth (Timtam) and is free to be modivied and optimized later on.

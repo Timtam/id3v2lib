@@ -13,17 +13,16 @@
 
 #include "id3v2lib.h"
 
-int has_id3v2tag(id3v2_header* tag_header)
+int _has_header_id3v2tag(id3v2_header* tag_header)
 {
-    if(memcmp(tag_header->tag, "ID3", 3) == 0)
-    {
-        return 1;
-    }
 
+  if(tag_header == NULL)
     return 0;
+
+  return _has_buffer_id3v2tag(tag_header->tag);
 }
 
-int _has_id3v2tag(char* raw_header)
+int _has_buffer_id3v2tag(char* raw_header)
 {
     if(memcmp(raw_header, "ID3", 3) == 0)
     {
@@ -33,7 +32,7 @@ int _has_id3v2tag(char* raw_header)
     return 0;
 }
 
-id3v2_header* get_header_from_file(FILE *file, int offset)
+id3v2_header* _get_header_from_file(FILE *file, int offset)
 {
     char buffer[ID3V2_HEADER];
 
@@ -46,10 +45,10 @@ id3v2_header* get_header_from_file(FILE *file, int offset)
     fseek(file, offset, SEEK_SET);
 
     fread(buffer, ID3V2_HEADER, 1, file);
-    return get_header_from_buffer(buffer, ID3V2_HEADER);
+    return _get_header_from_buffer(buffer, ID3V2_HEADER);
 }
 
-id3v2_header* get_header_from_buffer(char *buffer, int length)
+id3v2_header* _get_header_from_buffer(char *buffer, int length)
 {
     int position = 0;
     id3v2_header *tag_header;
@@ -57,11 +56,11 @@ id3v2_header* get_header_from_buffer(char *buffer, int length)
     if(length < ID3V2_HEADER) {
         return NULL;
     }
-    if( ! _has_id3v2tag(buffer))
+    if( ! _has_buffer_id3v2tag(buffer))
     {
         return NULL;
     }
-    tag_header = new_header();
+    tag_header = _new_header();
 
     memcpy(tag_header->tag, buffer, ID3V2_HEADER_TAG);
     tag_header->major_version = buffer[position += ID3V2_HEADER_TAG];
@@ -95,27 +94,35 @@ id3v2_header* get_header_from_buffer(char *buffer, int length)
     return tag_header;
 }
 
-int get_tag_version(id3v2_header* tag_header)
+int id3v2_get_tag_version(id3v2_tag *tag)
 {
-    if(tag_header->major_version == 3)
-    {
-        return ID3V23;
-    }
-    else if(tag_header->major_version == 4)
-    {
-        return ID3V24;
-    }
-    else if(tag_header->major_version == 2)
-    {
-      return ID3V22;
-    }
-    else
-    {
-        return ID3V2_NO_COMPATIBLE_TAG;
-    }
+  if(tag==NULL || tag->tag_header == NULL)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return ID3V2_NO_COMPATIBLE_TAG;
+  }
+
+  E_SUCCESS;
+
+  if(tag->tag_header->major_version == 3)
+  {
+    return ID3V23;
+  }
+  else if(tag->tag_header->major_version == 4)
+  {
+    return ID3V24;
+  }
+  else if(tag->tag_header->major_version == 2)
+  {
+    return ID3V22;
+  }
+  else
+  {
+    return ID3V2_NO_COMPATIBLE_TAG;
+  }
 }
 
-void find_headers_in_file(FILE *file, int **location, int *size)
+void _find_headers_in_file(FILE *file, int **location, int *size)
 {
   char byte; // currently processing byte
   int count = 0; // amount of offsets found
@@ -189,7 +196,7 @@ void find_headers_in_file(FILE *file, int **location, int *size)
         fseek(file, -11, SEEK_CUR);
         // so we get the header bytes and parse them to find out if we actually found a parseable header
         fgets(header_bytes, 10, file);
-        header=get_header_from_buffer(header_bytes, 10);
+        header=_get_header_from_buffer(header_bytes, 10);
         if(header==NULL)
           continue;
         // we successfully found something useful
