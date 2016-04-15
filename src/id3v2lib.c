@@ -192,8 +192,10 @@ id3v2_tag* id3v2_load_tag_from_buffer(char *bytes, int length)
         return NULL;
     }
 
+    free(tag->header);
+
     // Associations
-    tag->tag_header = tag_header;
+    tag->header = tag_header;
 
     if(id3v2_get_tag_version(tag) == ID3V2_NO_COMPATIBLE_TAG)
     {

@@ -96,7 +96,7 @@ id3v2_header* _get_header_from_buffer(char *buffer, int length)
 
 int id3v2_get_tag_version(id3v2_tag *tag)
 {
-  if(tag==NULL || tag->tag_header == NULL)
+  if(tag==NULL || tag->header == NULL)
   {
     E_FAIL(ID3V2_ERROR_NOT_FOUND);
     return ID3V2_NO_COMPATIBLE_TAG;
@@ -104,17 +104,17 @@ int id3v2_get_tag_version(id3v2_tag *tag)
 
   E_SUCCESS;
 
-  if(tag->tag_header->major_version == 3)
+  if(tag->header->major_version == 3)
   {
-    return ID3V23;
+    return ID3V2_3;
   }
-  else if(tag->tag_header->major_version == 4)
+  else if(tag->header->major_version == 4)
   {
-    return ID3V24;
+    return ID3V2_4;
   }
-  else if(tag->tag_header->major_version == 2)
+  else if(tag->header->major_version == 2)
   {
-    return ID3V22;
+    return ID3V2_2;
   }
   else
   {

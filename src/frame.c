@@ -25,49 +25,49 @@ id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
       return NULL;
 
     // Parse frame header
-    memcpy(frame->frame_id, bytes + offset, (version==ID3V22 ? ID3V2_FRAME_SIZE2 : ID3V2_FRAME_ID));
+    memcpy(frame->id, bytes + offset, (version==ID3V2_2 ? ID3V2_FRAME_SIZE2 : ID3V2_FRAME_ID));
 
-    if(version==ID3V22)
+    if(version==ID3V2_2)
       // fill the remaining space with emptyness
-      frame->frame_id[3]='\0';
+      frame->id[3]='\0';
 
     // Check if we are into padding
-    if(memcmp(frame->frame_id, "\0\0\0", 3) == 0)
+    if(memcmp(frame->id, "\0\0\0", 3) == 0)
     {
         free(frame);
         return NULL;
     }
 
     // check if all relevant chars are alphabetical
-    if(version == ID3V22 && (
-       !isalpha(frame->frame_id[0]) ||
-       !isalpha(frame->frame_id[1]) ||
-       !isalpha(frame->frame_id[2])))
+    if(version == ID3V2_2 && (
+       !isalpha(frame->id[0]) ||
+       !isalpha(frame->id[1]) ||
+       !isalpha(frame->id[2])))
     {
       free(frame);
       return NULL;
     }
-    else if(version != ID3V22 && (
-            !isalpha(frame->frame_id[0]) ||
-            !isalpha(frame->frame_id[1]) ||
-            !isalpha(frame->frame_id[2]) ||
-            !isalpha(frame->frame_id[3])))
+    else if(version != ID3V2_2 && (
+            !isalpha(frame->id[0]) ||
+            !isalpha(frame->id[1]) ||
+            !isalpha(frame->id[2]) ||
+            !isalpha(frame->id[3])))
     {
       free(frame);
       return NULL;
     }
 
     frame->size = btoi(bytes, ID3V2_DECIDE_FRAME(version, ID3V2_FRAME_SIZE2, ID3V2_FRAME_SIZE), offset += ID3V2_DECIDE_FRAME(version, ID3V2_FRAME_ID2, ID3V2_FRAME_ID));
-    if(version == ID3V24)
+    if(version == ID3V2_4)
     {
         frame->size = syncint_decode(frame->size);
     }
 
     // detecting if all frames are unsynchronized
-    if(tag->tag_header->flags&(1<<7)==1<<7)
+    if(tag->header->flags&(1<<7)==1<<7)
       unsynchronisation = 1;
 
-    if(version != ID3V22) // flags are only available in v23 and 24 tags
+    if(version != ID3V2_2) // flags are only available in v23 and 24 tags
     {
       memcpy(frame->flags, bytes + (offset += ID3V2_FRAME_SIZE), 2);
       offset += ID3V2_FRAME_FLAGS;
@@ -121,10 +121,10 @@ int id3v2_get_frame_type(id3v2_frame *frame)
     E_SUCCESS;
 
     // some exceptions, for example...
-    if(strcmp(frame->frame_id, "PIC\0")==0) // not called APIC in v22, but PIC instead
+    if(strcmp(frame->id, "PIC\0")==0) // not called APIC in v22, but PIC instead
       return ID3V2_APIC_FRAME;
 
-    switch(frame->frame_id[0])
+    switch(frame->id[0])
     {
         case 'T':
             return ID3V2_TEXT_FRAME;
@@ -245,7 +245,7 @@ id3v2_frame_apic_content* id3v2_parse_apic_content_from_frame(id3v2_frame* frame
 
     content->mime_type = frame->data+offset;
 
-    if(frame->version==ID3V22)
+    if(frame->version==ID3V2_2)
     {
       // id3 v2.2 mime types are always (!) exactly 3 bytes long, without the terminator
       content->mime_type_size = 3;
@@ -293,6 +293,13 @@ void id3v2_add_frame_to_tag(id3v2_tag *tag, id3v2_frame *frame)
 {
   id3v2_frame *last_frame;
 
+  if((frame->version != ID3V2_2 && id3v2_get_tag_version(tag)==ID3V2_2) ||
+     (frame->version == ID3V2_2 && id3v2_get_tag_version(tag)!=ID3V2_2))
+  {
+    E_FAIL(ID3V2_ERROR_INCOMPATIBLE_TAG);
+    return;
+  }
+
   if(tag->frame == NULL)
   {
     tag->frame = frame;
@@ -326,11 +333,11 @@ id3v2_frame *id3v2_get_frame_from_tag(id3v2_tag *tag, char *frame_id)
     // we will copy the id here so we can adjust it if necessary
     memcpy(tmp_id, frame_id, ID3V2_FRAME_ID);
 
-    if(matching_frame->version==ID3V22)
+    if(matching_frame->version==ID3V2_2)
       // since id3 v22 only has 3-byte identifiers, we will replace the fourth sign (if available) with the empty sign
       tmp_id[3]='\0';
 
-    if(memcmp(matching_frame->frame_id, tmp_id, ID3V2_FRAME_ID)==0)
+    if(memcmp(matching_frame->id, tmp_id, ID3V2_FRAME_ID)==0)
       break; 
 
     matching_frame = matching_frame->next;

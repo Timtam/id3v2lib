@@ -78,7 +78,7 @@ void free_tag(id3v2_tag* tag)
     id3v2_frame *frame;
     id3v2_frame *next_frame;
 
-    free(tag->tag_header);
+    free(tag->header);
     frame = tag->frame;
     while(frame != NULL)
     {

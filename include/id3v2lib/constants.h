@@ -22,9 +22,9 @@
 #define ID3V2_EXTENDED_HEADER_SIZE 4
 
 #define ID3V2_NO_COMPATIBLE_TAG 0
-#define ID3V22  2
-#define ID3V23  3
-#define ID3V24  4
+#define ID3V2_2  2
+#define ID3V2_3  3
+#define ID3V2_4  4
 // END TAG_HEADER CONSTANTS
 
 /**
@@ -54,7 +54,7 @@
 /**
  * FRAME IDs
  */
-#define ID3V2_DECIDE_FRAME(x,y,z) (x==ID3V22 ? y : z)
+#define ID3V2_DECIDE_FRAME(x,y,z) (x==ID3V2_2 ? y : z)
 #define ID3V2_TITLE_FRAME_ID(x) ID3V2_DECIDE_FRAME(x, "TT2", "TIT2")
 #define ID3V2_ARTIST_FRAME_ID(x) ID3V2_DECIDE_FRAME(x, "TP1", "TPE1")
 #define ID3V2_ALBUM_FRAME_ID(x) ID3V2_DECIDE_FRAME(x, "TAL", "TALB")

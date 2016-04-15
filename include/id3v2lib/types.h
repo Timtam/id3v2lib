@@ -52,7 +52,7 @@ typedef struct
 
 struct id3v2_frame
 {
-    char frame_id[ID3V2_FRAME_ID];
+    char id[ID3V2_FRAME_ID];
     int size;
     char flags[ID3V2_FRAME_FLAGS];
     int version; // needed to identify the tag version this frame is related too
@@ -63,7 +63,7 @@ struct id3v2_frame
 
 typedef struct
 {
-    id3v2_header* tag_header;
+    id3v2_header* header;
     id3v2_frame *frame;
 } id3v2_tag;
 

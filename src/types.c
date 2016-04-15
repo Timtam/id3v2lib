@@ -23,9 +23,9 @@ id3v2_tag* id3v2_new_tag()
       return NULL;
     }
 
-    tag->tag_header = _new_header();
+    tag->header = _new_header();
 
-    if(tag->tag_header == NULL)
+    if(tag->header == NULL)
     {
       E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
       free(tag);
