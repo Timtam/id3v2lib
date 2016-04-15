@@ -100,7 +100,7 @@ void id3v2_load_tags_from_file(FILE *file, id3v2_tag ***tags, int *count)
     return;
   }
 
-  *tags= (id3v2_tag **)malloc(sizeof(id3v2_tag *));
+  *tags= (id3v2_tag **)malloc((*count)*sizeof(id3v2_tag *));
 
   if(*tags == NULL)
   {
@@ -126,7 +126,7 @@ void id3v2_load_tags_from_file(FILE *file, id3v2_tag ***tags, int *count)
 
     free(header);
 
-    fseek(file, offsets[i], SEEK_SET);
+    fseek(file, -10, SEEK_CUR);
 
     buffer = (char*)malloc((tag_size+10) * sizeof(char));
 
@@ -147,31 +147,13 @@ void id3v2_load_tags_from_file(FILE *file, id3v2_tag ***tags, int *count)
       return;
     }
 
-    (*count)++;
-
-    *tags=(id3v2_tag **)realloc(*tags, ((*count)+1)*sizeof(id3v2_tag *));
-
-    if(*tags == NULL)
-    {
-      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
-      *count = 0;
-      return;
-    }
-
     free(buffer);
 
   }
 
-  if(*count > 0)
-  {
-    *tags = (id3v2_tag **)realloc(*tags, (*count)*sizeof(id3v2_tag *));
-    if(*tags == NULL)
-    {
-      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
-      *count = 0;
-      return;
-    }
-  }
+  free(offsets);
+
+  E_SUCCESS;
 
   return;
 

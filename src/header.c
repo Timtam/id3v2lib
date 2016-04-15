@@ -131,11 +131,12 @@ void _find_header_offsets_in_file(FILE *file, int **location, int *size)
   char pattern_position = 0; // amount of pattern bytes found
   char scanning = 1; // still scanning?
 
+  *size = 0;
+
   header_bytes=(char *)malloc(10*sizeof(char));
 
   if(header_bytes==NULL)
   {
-    *size = 0;
     return;
   }
 
@@ -144,7 +145,6 @@ void _find_header_offsets_in_file(FILE *file, int **location, int *size)
   if(offsets==NULL)
   {
     free(header_bytes);
-    *size = 0;
     return;
   }
 
