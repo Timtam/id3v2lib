@@ -122,10 +122,9 @@ int id3v2_get_tag_version(id3v2_tag *tag)
   }
 }
 
-void _find_headers_in_file(FILE *file, int **location, int *size)
+void _find_header_offsets_in_file(FILE *file, int **location, int *size)
 {
   char byte; // currently processing byte
-  int count = 0; // amount of offsets found
   id3v2_header *header;
   char *header_bytes; // used to store the header bytes found
   int *offsets;
@@ -156,11 +155,11 @@ void _find_headers_in_file(FILE *file, int **location, int *size)
     switch(pattern_position)
     {
       case 0:
-        if(byte=='I' || byte=='i')
+        if(byte=='I')
           pattern_position++;
         break;
       case 1:
-        if(byte=='D' || byte=='d')
+        if(byte=='D')
           pattern_position++;
         else
           pattern_position = 0;
@@ -200,9 +199,9 @@ void _find_headers_in_file(FILE *file, int **location, int *size)
         if(header==NULL)
           continue;
         // we successfully found something useful
-        offsets[count] = ftell(file)-9;
-        count++;
-        offsets=realloc(offsets, (count+1)*sizeof(int));
+        offsets[*size] = ftell(file)-9;
+        (*size)++;
+        offsets=realloc(offsets, ((*size)+1)*sizeof(int));
         if(offsets==NULL)
         {
           free(header_bytes);
@@ -216,9 +215,9 @@ void _find_headers_in_file(FILE *file, int **location, int *size)
     }
   }
 
-  if( count > 0)
+  if( *size > 0)
   {
-    offsets=(int *)realloc(offsets, count*sizeof(int));
+    offsets=(int *)realloc(offsets, (*size)*sizeof(int));
     if(offsets==NULL)
     {
       free(header_bytes);
@@ -226,10 +225,7 @@ void _find_headers_in_file(FILE *file, int **location, int *size)
       return;
     }
     *location = offsets;
-    *size = count;
   }
-  else
-    *size = 0;
 
   free(header_bytes);
   return;

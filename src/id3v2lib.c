@@ -29,7 +29,7 @@ id3v2_tag* id3v2_load_tag_from_file(FILE *file)
     }
 
     // parse file for id3 tags
-    _find_headers_in_file(file, &offsets, &count);
+    _find_header_offsets_in_file(file, &offsets, &count);
 
     // no headers found?
     if(count==0)
@@ -75,6 +75,106 @@ id3v2_tag* id3v2_load_tag_from_file(FILE *file)
     free(buffer);
 
     return tag;
+}
+
+void id3v2_load_tags_from_file(FILE *file, id3v2_tag ***tags, int *count)
+{
+  char *buffer;
+  id3v2_header *header;
+  int i;
+  int *offsets;
+  int tag_size;
+
+  if(file == NULL)
+  {
+    E_FAIL(ID3V2_ERROR_UNABLE_TO_OPEN);
+    *count = 0;
+    return;
+  }
+
+  _find_header_offsets_in_file(file, &offsets, count);
+
+  if(*count == 0)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return;
+  }
+
+  *tags= (id3v2_tag **)malloc(sizeof(id3v2_tag *));
+
+  if(*tags == NULL)
+  {
+    E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+    *count = 0;
+    return;
+  }
+
+  for(i = 0; i < *count; i++)
+  {
+    fseek(file, offsets[i], SEEK_SET);
+
+    header = _get_header_from_file(file, offsets[i]);
+
+    if(header == NULL)
+    {
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+      *count = 0;
+      return;
+    }
+
+    tag_size = header->tag_size;
+
+    free(header);
+
+    fseek(file, offsets[i], SEEK_SET);
+
+    buffer = (char*)malloc((tag_size+10) * sizeof(char));
+
+    if(buffer == NULL)
+    {
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+      *count = 0;
+      return;
+    }
+
+    fread(buffer, tag_size+10, 1, file);
+
+    (*tags)[i]=id3v2_load_tag_from_buffer(buffer, tag_size+10);
+
+    if((*tags)[i] == NULL)
+    {
+      *count = 0;
+      return;
+    }
+
+    (*count)++;
+
+    *tags=(id3v2_tag **)realloc(*tags, ((*count)+1)*sizeof(id3v2_tag *));
+
+    if(*tags == NULL)
+    {
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+      *count = 0;
+      return;
+    }
+
+    free(buffer);
+
+  }
+
+  if(*count > 0)
+  {
+    *tags = (id3v2_tag **)realloc(*tags, (*count)*sizeof(id3v2_tag *));
+    if(*tags == NULL)
+    {
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+      *count = 0;
+      return;
+    }
+  }
+
+  return;
+
 }
 
 id3v2_tag* id3v2_load_tag_from_buffer(char *bytes, int length)
