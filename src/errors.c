@@ -16,7 +16,7 @@ unsigned short id3v2_get_error()
   return id3v2_error;
 }
 
-void id3v2_set_error(unsigned short err)
+void _set_error(unsigned short err)
 {
   id3v2_error = err;
 }
