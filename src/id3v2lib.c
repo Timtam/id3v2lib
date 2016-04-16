@@ -159,6 +159,49 @@ void id3v2_load_tags_from_file(FILE *file, id3v2_tag ***tags, int *count)
 
 }
 
+void id3v2_load_tags_from_buffer(char *buffer, int length, id3v2_tag ***tags, int *count)
+{
+  int i;
+  int *offsets;
+
+  _find_header_offsets_in_buffer(buffer, length, &offsets, count);
+
+  if(*count == 0)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return;
+  }
+
+  *tags= (id3v2_tag **)malloc((*count)*sizeof(id3v2_tag *));
+
+  if(*tags == NULL)
+  {
+    E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+    *count = 0;
+    return;
+  }
+
+  for(i = 0; i < *count; i++)
+  {
+
+    (*tags)[i]=id3v2_load_tag_from_buffer(buffer+offsets[i], length-offsets[i]);
+
+    if((*tags)[i] == NULL)
+    {
+      *count = 0;
+      return;
+    }
+
+  }
+
+  free(offsets);
+
+  E_SUCCESS;
+
+  return;
+
+}
+
 id3v2_tag* id3v2_load_tag_from_buffer(char *bytes, int length)
 {
     // Declaration

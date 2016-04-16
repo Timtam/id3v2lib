@@ -128,7 +128,6 @@ void _find_header_offsets_in_file(FILE *file, int **location, int *size)
   id3v2_header *header;
   char *header_bytes; // used to store the header bytes found
   int *offsets;
-  char pattern_position = 0; // amount of pattern bytes found
   char scanning = 1; // still scanning?
 
   *size = 0;
@@ -152,81 +151,149 @@ void _find_header_offsets_in_file(FILE *file, int **location, int *size)
 
   while( (byte = fgetc(file)) != EOF && scanning)
   {
-    switch(pattern_position)
+    if(_identify_id3v2tag(byte))
     {
-      case 0:
-        if(byte=='I')
-          pattern_position++;
-        break;
-      case 1:
-        if(byte=='D')
-          pattern_position++;
-        else
-          pattern_position = 0;
-        break;
-      case 2:
-        if(byte=='3')
-          pattern_position++;
-        else
-          pattern_position = 0;
-        break;
-      case 3:
-      case 4:
-        if(byte<0xFF)
-          pattern_position++;
-        else
-          pattern_position = 0;
-        break;
-      case 5:
-        pattern_position++;
-        break;
-      case 6:
-      case 7:
-      case 8:
-      case 9:
-        if(byte<0x80)
-          pattern_position++;
-        else
-          pattern_position = 0;
-        break;
-      case 10: // here the actually interesting part begins
-        // we successfully found an id3 tag
-        pattern_position = 0;
-        fseek(file, -11, SEEK_CUR);
-        // so we get the header bytes and parse them to find out if we actually found a parseable header
-        fgets(header_bytes, 10, file);
-        header=_get_header_from_buffer(header_bytes, 10);
-        if(header==NULL)
-          continue;
-        // we successfully found something useful
-        offsets[*size] = ftell(file)-9;
-        (*size)++;
-        offsets=realloc(offsets, ((*size)+1)*sizeof(int));
-        if(offsets==NULL)
-        {
-          free(header_bytes);
-          *size = 0;
-          return;
-        }
-        if(fseek(file, header->tag_size+1, SEEK_CUR)!=0)
-          // seems like the tag isn't fully contained in this file, otherwise this shouldn't happen
-          scanning = 0;
-        break;
+      // we successfully found an id3 tag
+      fseek(file, -10, SEEK_CUR);
+      // so we get the header bytes and parse them to find out if we actually found a parseable header
+      fgets(header_bytes, 10, file);
+      header=_get_header_from_buffer(header_bytes, 10);
+      if(header==NULL)
+        continue;
+      // we successfully found something useful
+      offsets[*size] = ftell(file)-9;
+      (*size)++;
+      offsets=realloc(offsets, ((*size)+1)*sizeof(int));
+      if(offsets==NULL)
+      {
+        free(header_bytes);
+        *size = 0;
+        return;
+      }
+      if(fseek(file, header->tag_size+1, SEEK_CUR)!=0)
+        // seems like the tag isn't fully contained in this file, otherwise this shouldn't happen
+        scanning = 0;
     }
   }
+
+  _identify_id3v2tag(0xFF); // reset it, just for sure
+
+  free(header_bytes);
 
   if( *size > 0)
   {
     offsets=(int *)realloc(offsets, (*size)*sizeof(int));
     if(offsets==NULL)
     {
-      free(header_bytes);
       *size = 0;
       return;
     }
     *location = offsets;
   }
 
-  free(header_bytes);
+  return;
+}
+
+int _identify_id3v2tag(char byte)
+{
+  static char pattern_position = 0; // position in pattern
+
+  if(pattern_position == 10)
+    pattern_position = 0;
+
+  switch(pattern_position)
+  {
+    case 0:
+      if(byte == 'I')
+        pattern_position++;
+      break;
+    case 1:
+      if(byte == 'D')
+        pattern_position++;
+      else
+        pattern_position = 0;
+      break;
+    case 2:
+      if(byte == '3')
+        pattern_position++;
+      else
+        pattern_position = 0;
+      break;
+    case 3:
+    case 4:
+      if(byte < 0xFF)
+        pattern_position++;
+      else
+        pattern_position = 0;
+      break;
+    case 5:
+      pattern_position++;
+      break;
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+      if(byte<0x80)
+        pattern_position++;
+      else
+        pattern_position = 0;
+      break;
+  }
+
+  return (pattern_position == 10);
+}
+
+void _find_header_offsets_in_buffer(char *buffer, int length, int **location, int *size)
+{
+  id3v2_header *header;
+  int *offsets;
+  int position = 0;
+  char scanning = 1; // still scanning?
+
+  *size = 0;
+
+  offsets=(int*)malloc(sizeof(int));
+
+  if(offsets==NULL)
+    return;
+
+  while( position < length && scanning)
+  {
+    if(_identify_id3v2tag(buffer[position]))
+    {
+      // we successfully found an id3 tag
+      // so we get the header bytes and parse them to find out if we actually found a parseable header
+      header=_get_header_from_buffer(buffer+position-10, 10);
+      if(header==NULL)
+        continue;
+      // we successfully found something useful
+      offsets[*size] = position-10;
+      (*size)++;
+      offsets=realloc(offsets, ((*size)+1)*sizeof(int));
+      if(offsets==NULL)
+      {
+        *size = 0;
+        return;
+      }
+      if(position+header->tag_size>=length)
+        // seems like the tag isn't fully contained in this file, otherwise this shouldn't happen
+        scanning = 0;
+    }
+    position++;
+  }
+
+  _identify_id3v2tag(0xFF); // reset it, just for sure
+
+  if( *size > 0)
+  {
+    offsets=(int *)realloc(offsets, (*size)*sizeof(int));
+    if(offsets==NULL)
+    {
+      *size = 0;
+      return;
+    }
+    *location = offsets;
+  }
+
   return;
 }

@@ -16,9 +16,11 @@
 #include "constants.h"
 #include "utils.h"
 
+void _find_header_offsets_in_buffer(char *buffer, int length, int **location, int *size);
 void _find_header_offsets_in_file(FILE *file, int **location, int *size);
 id3v2_header* _get_header_from_buffer(char* buffer, int length);
 id3v2_header* _get_header_from_file(FILE *file, int offset);
+int _identify_id3v2tag(char byte);
 int _has_buffer_id3v2tag(char* raw_header);
 int _has_header_id3v2tag(id3v2_header* tag_header);
 int id3v2_get_tag_version(id3v2_tag *tag);
