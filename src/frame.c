@@ -132,82 +132,13 @@ int id3v2_get_frame_type(id3v2_frame *frame)
             return ID3V2_COMMENT_FRAME;
         case 'A':
             return ID3V2_APIC_FRAME;
+        case 'X':
+        case 'Y':
+        case 'Z':
+            return ID3V2_EXPERIMENTAL_FRAME;
         default:
             return ID3V2_INVALID_FRAME;
     }
-}
-
-id3v2_frame_text_content* id3v2_parse_text_content_from_frame(id3v2_frame* frame)
-{
-    id3v2_frame_text_content* content;
-    if(frame == NULL)
-    {
-        E_FAIL(ID3V2_ERROR_NOT_FOUND);
-        return NULL;
-    }
-    
-    content = id3v2_new_text_content();
-
-    if(content==NULL)
-      return NULL;
-
-    content->encoding = frame->data[0];
-
-    if(content->encoding==ID3V2_UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data+ID3V2_FRAME_ENCODING))
-      content->encoding = ID3V2_UTF_16_ENCODING_WITHOUT_BOM;
-
-    content->size = frame->size - ID3V2_FRAME_ENCODING;
-    content->data=frame->data + ID3V2_FRAME_ENCODING;
-
-    E_SUCCESS;
-
-    return content;
-}
-
-id3v2_frame_comment_content* id3v2_parse_comment_content_from_frame(id3v2_frame* frame)
-{
-    id3v2_frame_comment_content *content;
-    int offset = 0;
-
-    if(frame == NULL)
-    {
-        E_FAIL(ID3V2_ERROR_NOT_FOUND);
-        return NULL;
-    }
-    
-    content = id3v2_new_comment_content();
-
-    if(content==NULL)
-      return NULL;
-    
-    content->text->encoding = frame->data[0];
-    offset += ID3V2_FRAME_ENCODING;
-
-    memcpy(content->language, frame->data + offset, ID3V2_FRAME_LANGUAGE);
-    offset += ID3V2_FRAME_LANGUAGE;
-
-    if(content->text->encoding==ID3V2_UTF_16_ENCODING_WITH_BOM && !has_bom(frame->data + offset))
-      content->text->encoding = ID3V2_UTF_16_ENCODING_WITHOUT_BOM;
-
-    if(content->text->encoding==ID3V2_ISO_ENCODING || content->text->encoding == ID3V2_UTF_8_ENCODING)
-    {
-      content->short_description[0]=(frame->data)[offset];
-      memset(content->short_description + 1, '\0', 3);
-      offset += 1;
-    }
-    else
-    {
-      memcpy(content->short_description, frame->data+offset, 4);
-      offset += 4;
-    }
-
-    content->text->size = frame->size - offset;
-
-    content->text->data=frame->data + offset;
-
-    E_SUCCESS;
-    
-    return content;
 }
 
 int _get_mime_type_size_from_buffer(char* data)
@@ -220,73 +151,6 @@ int _get_mime_type_size_from_buffer(char* data)
     }
     
     return i;
-}
-
-id3v2_frame_apic_content* id3v2_parse_apic_content_from_frame(id3v2_frame* frame)
-{
-    id3v2_frame_apic_content *content;
-    int offset = 1; // Skip ID3_FRAME_ENCODING
-
-    if(frame == NULL)
-    {
-        E_FAIL(ID3V2_ERROR_NOT_FOUND);
-        return NULL;
-    }
-    
-    content = id3v2_new_apic_content();
-
-    if(content==NULL)
-      return NULL;
-    
-    content->encoding = frame->data[0];
-
-    if(content->encoding==ID3V2_UTF_16_ENCODING_WITH_BOM && !has_bom(content->description))
-      content->encoding = ID3V2_UTF_16_ENCODING_WITHOUT_BOM;
-
-    content->mime_type = frame->data+offset;
-
-    if(frame->version==ID3V2_2)
-    {
-      // id3 v2.2 mime types are always (!) exactly 3 bytes long, without the terminator
-      content->mime_type_size = 3;
-    }
-    else
-    {
-      content->mime_type_size=_get_mime_type_size_from_buffer(content->mime_type);
-    }
-
-    offset += content->mime_type_size;
-
-    content->picture_type = frame->data[++offset];
-
-    content->description = frame->data+ ++offset;
-
-    if (content->encoding == ID3V2_UTF_16_ENCODING_WITH_BOM || content->encoding==ID3V2_UTF_16_ENCODING_WITHOUT_BOM)
-    {
-      /* skip UTF-16 description */
-      // a bit more understandable:
-      // as long as we don't get the \0\0 end, we skip forward
-      for ( ; memcmp(frame->data+offset, "\0\0", 2)!=0; offset += 2);
-      offset += 2;
-
-    }
-    else
-    {
-      /* skip UTF-8 or Latin-1 description */
-      for ( ; frame->data[offset] != '\0'; offset++);
-      offset += 1;
-    }
-
-    // calculating the description length
-    // a mixture of pointer and integer division/addition
-    content->description_size=((frame->data + offset) - content->mime_type) - content->mime_type_size -1;
-  
-    content->picture_size = frame->size - offset;
-    content->data= frame->data + offset;
-
-    E_SUCCESS;    
-
-    return content;
 }
 
 void id3v2_add_frame_to_tag(id3v2_tag *tag, id3v2_frame *frame)
@@ -399,4 +263,167 @@ char *_synchronize_data_from_buffer(char *data, int size)
   }
 
   return sync_data;
+}
+
+void id3v2_get_text_from_frame(id3v2_frame *frame, char **text, int *size, char *encoding)
+{
+  int offset = ID3V2_FRAME_ENCODING;
+
+  if(frame == NULL)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return;
+  }
+
+  E_SUCCESS;
+
+  *encoding = frame->data[0];
+
+  switch(id3v2_get_frame_type(frame))
+  {
+    case ID3V2_TEXT_FRAME:
+      *text = frame->data + offset;
+      *size = frame->size - offset;
+      break;
+    case ID3V2_COMMENT_FRAME:
+      offset += ID3V2_FRAME_LANGUAGE;
+      if(*encoding == ID3V2_ISO_ENCODING ||
+         *encoding == ID3V2_UTF_8_ENCODING)
+        offset++;
+      else
+        offset += 4;
+      *text = frame->data + offset;
+      *size = frame->size - offset;
+      break;
+    case ID3V2_APIC_FRAME:
+      offset += (frame->version == ID3V2_2 ? 3 : _get_mime_type_size_from_buffer(frame->data + offset));
+      offset += 2; // 1 remaining mime type byte and 1 byte picture type
+      *text = frame->data + offset;
+      if (*encoding == ID3V2_UTF_16_ENCODING_WITH_BOM || *encoding==ID3V2_UTF_16_ENCODING_WITHOUT_BOM)
+      {
+        /* skip UTF-16 description */
+        // a bit more understandable:
+        // as long as we don't get the \0\0 end, we skip forward
+        for ( ; memcmp(frame->data+offset, "\0\0", 2)!=0; offset += 2);
+        offset += 2;
+
+      }
+      else
+      {
+        /* skip UTF-8 or Latin-1 description */
+        for ( ; frame->data[offset] != '\0'; offset++);
+        offset++;
+      }
+      
+      *size = (frame->data + offset) - (*text);
+      break;
+    default:
+      E_FAIL(ID3V2_ERROR_UNSUPPORTED);
+  }
+}
+
+void id3v2_get_language_from_frame(id3v2_frame *frame, char **language)
+{
+  if(frame==NULL)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return;
+  }
+
+  if(id3v2_get_frame_type(frame)!=ID3V2_COMMENT_FRAME)
+  {
+    E_FAIL(ID3V2_ERROR_UNSUPPORTED);
+    return;
+  }
+
+  *language = frame->data + ID3V2_FRAME_ENCODING;
+
+  E_SUCCESS;
+
+}
+
+void id3v2_get_descriptor_from_frame(id3v2_frame *frame, char **descriptor, int *size)
+{
+  int offset = ID3V2_FRAME_ENCODING;
+
+  if(frame == NULL)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return;
+  }
+
+  E_SUCCESS;
+
+  switch(id3v2_get_frame_type(frame))
+  {
+    case ID3V2_COMMENT_FRAME:
+      offset += ID3V2_FRAME_LANGUAGE;
+      *descriptor = frame->data + offset;
+      if(frame->data[0]==ID3V2_UTF_16_ENCODING_WITH_BOM)
+        *size = 4;
+      else if(frame->data[0] == ID3V2_UTF_16_ENCODING_WITHOUT_BOM)
+        *size = 2;
+      else
+        *size = 1;
+      break;
+    case ID3V2_APIC_FRAME:
+      offset += (frame->version == ID3V2_2 ? 3 : _get_mime_type_size_from_buffer(frame->data + offset)) + 1;
+      *descriptor = frame->data + offset;
+      *size = 1;
+      break;
+    default:
+      E_FAIL(ID3V2_ERROR_UNSUPPORTED);    
+  }
+}
+
+void id3v2_get_mime_type_from_frame(id3v2_frame *frame, char **mime_type, int *size)
+{
+  int offset = ID3V2_FRAME_ENCODING;
+
+  if(frame == NULL)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return;
+  }
+
+  if(id3v2_get_frame_type(frame)!=ID3V2_APIC_FRAME)
+  {
+    E_FAIL(ID3V2_ERROR_UNSUPPORTED);
+    return;
+  }
+
+  *mime_type = frame->data + offset;
+
+  *size = (frame->version == ID3V2_2 ? 3 : _get_mime_type_size_from_buffer(frame->data + offset));
+
+  E_SUCCESS;
+
+}
+
+void id3v2_get_picture_from_frame(id3v2_frame *frame, char **picture, int *size)
+{
+  char *description;
+  int description_size;
+  char encoding;
+
+  if(frame == NULL)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return;
+  }
+
+  if(id3v2_get_frame_type(frame)!=ID3V2_APIC_FRAME)
+  {
+    E_FAIL(ID3V2_ERROR_UNSUPPORTED);
+    return;
+  }
+
+  id3v2_get_text_from_frame(frame, &description, &description_size, &encoding);
+
+  *picture = description + description_size;
+
+  *size = (frame->data + frame->size) - (*picture);
+
+  E_SUCCESS;
+
 }

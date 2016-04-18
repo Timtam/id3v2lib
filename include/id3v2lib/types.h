@@ -24,32 +24,6 @@ typedef struct
     int extended_header_size;
 } id3v2_header;
 
-typedef struct
-{
-    int size;
-    char encoding;
-    char* data;
-} id3v2_frame_text_content;
-
-typedef struct
-{
-    char language[ID3V2_FRAME_LANGUAGE];
-    char short_description[4];
-    id3v2_frame_text_content* text;
-} id3v2_frame_comment_content;
-
-typedef struct
-{
-    char encoding;
-    char* mime_type;
-    int mime_type_size;
-    char picture_type;
-    char* description;
-    int description_size;
-    int picture_size;
-    char* data;
-} id3v2_frame_apic_content;
-
 struct id3v2_frame
 {
     char id[ID3V2_FRAME_ID];
@@ -69,10 +43,7 @@ typedef struct
 
 // Constructor functions
 id3v2_header* _new_header();
-id3v2_frame_apic_content* id3v2_new_apic_content();
-id3v2_frame_comment_content* id3v2_new_comment_content();
 id3v2_frame* id3v2_new_frame(id3v2_tag *tag);
 id3v2_tag* id3v2_new_tag();
-id3v2_frame_text_content* id3v2_new_text_content();
 
 #endif

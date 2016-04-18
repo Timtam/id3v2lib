@@ -19,9 +19,10 @@ char *_synchronize_data_from_buffer(char *data, int size);
 void id3v2_add_frame_to_tag(id3v2_tag *tag, id3v2_frame *frame);
 id3v2_frame *id3v2_get_frame_from_tag(id3v2_tag *tag, char *frame_id);
 int id3v2_get_frame_type(id3v2_frame *frame);
-id3v2_frame_apic_content* id3v2_parse_apic_content_from_frame(id3v2_frame* frame);
-id3v2_frame_comment_content* id3v2_parse_comment_content_from_frame(id3v2_frame* frame);
-id3v2_frame_text_content* id3v2_parse_text_content_from_frame(id3v2_frame* frame);
-void id3v2_set_frame_from_text_content(id3v2_frame *frame, id3v2_frame_text_content *content);
+void id3v2_get_descriptor_from_frame(id3v2_frame *frame, char **descriptor, int *size);
+void id3v2_get_language_from_frame(id3v2_frame *frame, char **language);
+void id3v2_get_mime_type_from_frame(id3v2_frame *frame, char **mime_type, int *size);
+void id3v2_get_picture_from_frame(id3v2_frame *frame, char **picture, int *size);
+void id3v2_get_text_from_frame(id3v2_frame *frame, char **text, int *size, char *encoding);
 
 #endif

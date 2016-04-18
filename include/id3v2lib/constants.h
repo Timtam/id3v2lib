@@ -43,6 +43,7 @@
 #define ID3V2_TEXT_FRAME 1
 #define ID3V2_COMMENT_FRAME 2
 #define ID3V2_APIC_FRAME 3
+#define ID3V2_EXPERIMENTAL_FRAME 4
 
 #define ID3V2_ISO_ENCODING 0 // supported in all tags
 #define ID3V2_UTF_16_ENCODING_WITH_BOM 1 // in all tags possible
