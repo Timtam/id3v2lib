@@ -73,7 +73,7 @@ int syncint_decode(int value)
     return result;
 }
 
-void free_tag(id3v2_tag* tag)
+void id3v2_free_tag(id3v2_tag* tag)
 {
     id3v2_frame *frame;
     id3v2_frame *next_frame;
