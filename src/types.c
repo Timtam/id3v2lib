@@ -64,8 +64,27 @@ id3v2_frame* id3v2_new_frame(id3v2_tag *tag)
       return NULL;
     }
 
+    frame->data = (char*)malloc(2*sizeof(char));
+
+    if(frame->data == NULL)
+    {
+        E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+        free(frame);
+        return NULL;
+    }
+
+    frame->data[0] = ID3V2_ISO_ENCODING;
+    frame->data[1] = '\0';
+
+    frame->size = 2;
+
+    memset(frame->id, '\0', ID3V2_FRAME_ID);
+
     frame->next = NULL;
+
     frame->version = id3v2_get_tag_version(tag);
+
+    frame->parsed = 1;
 
     E_SUCCESS;
 

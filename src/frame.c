@@ -42,7 +42,7 @@ id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
     if(version == ID3V2_2 && (
        !isalpha(frame->id[0]) ||
        !isalpha(frame->id[1]) ||
-       !isalpha(frame->id[2])))
+       !isalnum(frame->id[2])))
     {
       free(frame);
       return NULL;
@@ -89,6 +89,8 @@ id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
       // just pushing the offset forward
       offset += ID3V2_FRAME_SIZE2;
     
+    free(frame->data);
+
     // Load frame data
     if(unsynchronisation)
       frame->data = _synchronize_data_from_buffer(bytes + offset, frame->size);
@@ -97,12 +99,12 @@ id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
 
     if(frame->data == NULL)
     {
-      free(frame);
-      return NULL;
+      frame->parsed = 0;
+      return frame;
     }
 
-
-    memcpy(frame->data, bytes + offset, frame->size);
+    if(!unsynchronisation)
+      memcpy(frame->data, bytes + offset, frame->size);
     
     // the frame was successfully parsed
     frame->parsed = 1;

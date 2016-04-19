@@ -264,7 +264,9 @@ id3v2_tag* id3v2_load_tag_from_buffer(char *bytes, int length)
         if(frame->parsed) // and it got parsed
           id3v2_add_frame_to_tag(tag, frame);
         bytes += frame->size + 10;
-        if(!(frame->parsed))
+        if(!frame->parsed)
+          if(frame->data != NULL)
+            free(frame->data);
           free(frame);
       }
       else
