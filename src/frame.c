@@ -18,7 +18,6 @@ id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
 {
     id3v2_frame* frame = id3v2_new_frame(tag);
     int offset = 0;
-    char unsynchronisation = 0;
     int version = id3v2_get_tag_version(tag);
     
     if(frame == NULL)
@@ -63,13 +62,9 @@ id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
         frame->size = syncint_decode(frame->size);
     }
 
-    // detecting if all frames are unsynchronized
-    if(tag->header->flags&(1<<7)==1<<7)
-      unsynchronisation = 1;
-
     if(version != ID3V2_2) // flags are only available in v23 and 24 tags
     {
-      memcpy(frame->flags, bytes + (offset += ID3V2_FRAME_SIZE), 2);
+      memcpy(frame->flags, bytes + (offset += ID3V2_FRAME_SIZE), ID3V2_FRAME_FLAGS);
       offset += ID3V2_FRAME_FLAGS;
 
       // if some unknown flags are set, we ignore this frame since that actually means that the frame might not be parseable
@@ -80,10 +75,6 @@ id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
         frame->parsed = 0;
         return frame;
       }
-
-      // id3 v2.3 and v2.4 frames can define single-frame unsynchronisation in there flags too
-      if(frame->flags[1]&(1<<1)==(1<<1))
-        unsynchronisation = 1;
     }
     else
       // just pushing the offset forward
@@ -92,10 +83,7 @@ id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
     free(frame->data);
 
     // Load frame data
-    if(unsynchronisation)
-      frame->data = _synchronize_data_from_buffer(bytes + offset, frame->size);
-    else
-      frame->data= (char *)malloc(frame->size * sizeof(char));
+    frame->data= (char *)malloc(frame->size * sizeof(char));
 
     if(frame->data == NULL)
     {
@@ -103,8 +91,7 @@ id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
       return frame;
     }
 
-    if(!unsynchronisation)
-      memcpy(frame->data, bytes + offset, frame->size);
+    memcpy(frame->data, bytes + offset, frame->size);
     
     // the frame was successfully parsed
     frame->parsed = 1;
@@ -217,54 +204,55 @@ id3v2_frame *id3v2_get_frame_from_tag(id3v2_tag *tag, char *frame_id)
   return matching_frame;
 }
 
-char *_synchronize_data_from_buffer(char *data, int size)
+void _synchronize_frame(id3v2_frame *frame)
 {
   char check = 0; // indicated we'll have to inspect the next 2 bytes carefully
   int i;
   int sync_size = 0; // size of the synchronized data stream
   // at first allocating as much space as given into this function, if less is used we'll re-allocate later
-  char *sync_data=(char *)malloc(size * sizeof(char));
+  char *sync_data=(char *)malloc(frame->size * sizeof(char));
  
   if(sync_data==NULL)
-    return NULL;
+    return;
 
-  for(i = 0; i < size; i++)
+  for(i = 0; i < frame->size; i++)
   {
     switch(check)
     {
       case 0:
         // check if we find the relevant syncbyte here
-        if(data[i]==0xFF)
+        if(frame->data[i]==0xFF)
           check = 1;
-        sync_data[sync_size++] = data[i];
+        sync_data[sync_size++] = frame->data[i];
         break;
       case 1:
-        if(data[i]!=0x00) // false alarm
+        if(frame->data[i]!=0x00) // false alarm
         {
           check = 0;
-          sync_data[sync_size++] = data[i];
+          sync_data[sync_size++] = frame->data[i];
         }
         else // inspect even more
           check++;
         break;
       case 2:
-        if(data[i]!=0x00 && data[i]&(111<<7)!=(111<<7))
+        if(frame->data[i]!=0x00 && frame->data[i]&(111<<7)!=(111<<7))
         // false alarm, so we have to copy the previous byte at next and reset everything
-          sync_data[sync_size++] = data[i-1];
-        sync_data[sync_size++] = data[i];
+          sync_data[sync_size++] = frame->data[i-1];
+        sync_data[sync_size++] = frame->data[i];
         check = 0;
         break;
     }
   }  
   // if we successfully synchronized something, we can re-allocate some stuff here
-  if(sync_size<size)
+  if(sync_size<frame->size)
   {
     sync_data = (char *)realloc(sync_data, sync_size);
     if(sync_data == NULL)
-      return NULL;
+      return;
+    free(frame->data);
+    frame->data = sync_data;
+    frame->size = sync_size;
   }
-
-  return sync_data;
 }
 
 void id3v2_get_text_from_frame(id3v2_frame *frame, char **text, int *size, char *encoding)

@@ -261,13 +261,21 @@ id3v2_tag* id3v2_load_tag_from_buffer(char *bytes, int length)
       frame=_parse_frame_from_tag(tag, bytes);
       if(frame != NULL) // a frame was found
       {
-        if(frame->parsed) // and it got parsed
-          id3v2_add_frame_to_tag(tag, frame);
         bytes += frame->size + 10;
-        if(!frame->parsed)
+        if(frame->parsed) // and it got parsed
+        {
+          // detect unsynchronization and reverse it if needed
+          if(tag_header->flags&(1<<7)==(1<<7) ||
+             frame->flags[1]&(1<<1)==(1<<1))
+            _synchronize_frame(frame);
+          id3v2_add_frame_to_tag(tag, frame);
+        }
+        else
+        {
           if(frame->data != NULL)
             free(frame->data);
           free(frame);
+        }
       }
       else
         break;

@@ -15,7 +15,7 @@
 
 int _get_mime_type_size_from_buffer(char *data);
 id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes);
-char *_synchronize_data_from_buffer(char *data, int size);
+void _synchronize_frame(id3v2_frame *frame);
 void id3v2_add_frame_to_tag(id3v2_tag *tag, id3v2_frame *frame);
 id3v2_frame *id3v2_get_frame_from_tag(id3v2_tag *tag, char *frame_id);
 int id3v2_get_frame_type(id3v2_frame *frame);

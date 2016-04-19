@@ -80,6 +80,8 @@ id3v2_frame* id3v2_new_frame(id3v2_tag *tag)
 
     memset(frame->id, '\0', ID3V2_FRAME_ID);
 
+    memset(frame->flags, '\0', ID3V2_FRAME_FLAGS);
+
     frame->next = NULL;
 
     frame->version = id3v2_get_tag_version(tag);
