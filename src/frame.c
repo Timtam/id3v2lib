@@ -51,7 +51,7 @@ id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
             !isalpha(frame->id[0]) ||
             !isalpha(frame->id[1]) ||
             !isalpha(frame->id[2]) ||
-            !isalpha(frame->id[3])))
+            !isalnum(frame->id[3])))
     {
       free(frame);
       return NULL;
@@ -423,6 +423,26 @@ void id3v2_get_picture_from_frame(id3v2_frame *frame, char **picture, int *size)
   *picture = description + description_size;
 
   *size = (frame->data + frame->size) - (*picture);
+
+  E_SUCCESS;
+
+}
+
+void id3v2_get_id_from_frame(id3v2_frame *frame, char **id, int *size)
+{
+
+  if(frame == NULL)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return;
+  }
+
+  *id = frame->id;
+
+  if(frame->version == ID3V2_2)
+    *size = ID3V2_FRAME_ID2;
+  else
+    *size = ID3V2_FRAME_ID;
 
   E_SUCCESS;
 
