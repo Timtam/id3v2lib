@@ -54,7 +54,7 @@ id3v2_header* _new_header()
     return tag_header;
 }
 
-id3v2_frame* id3v2_new_frame(id3v2_tag *tag)
+id3v2_frame* id3v2_new_frame(id3v2_tag *tag, int type)
 {
     id3v2_frame* frame = (id3v2_frame*) malloc(sizeof(id3v2_frame));
 
@@ -64,31 +64,21 @@ id3v2_frame* id3v2_new_frame(id3v2_tag *tag)
       return NULL;
     }
 
-    frame->data = (char*)malloc(2*sizeof(char));
-
-    if(frame->data == NULL)
-    {
-        E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
-        free(frame);
-        return NULL;
-    }
-
-    frame->data[0] = ID3V2_ISO_ENCODING;
-    frame->data[1] = '\0';
-
-    frame->size = 2;
-
-    memset(frame->id, '\0', ID3V2_FRAME_ID);
-
-    memset(frame->flags, '\0', ID3V2_FRAME_FLAGS);
-
     frame->next = NULL;
 
     frame->version = id3v2_get_tag_version(tag);
 
     frame->parsed = 1;
 
-    E_SUCCESS;
+    id3v2_initialize_frame(frame, type);
+
+    if(E_GET != ID3V2_OK)
+    {
+      free(frame);
+      return NULL;
+    }
+
+    id3v2_add_frame_to_tag(tag, frame);
 
     return frame;
 }

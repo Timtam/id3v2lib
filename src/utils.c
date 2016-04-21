@@ -88,6 +88,9 @@ void id3v2_free_tag(id3v2_tag* tag)
         frame=next_frame;
     }
     free(tag);
+
+    E_SUCCESS;
+    
 }
 
 char* get_mime_type_from_filename(const char* filename)

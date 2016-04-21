@@ -43,7 +43,7 @@ typedef struct
 
 // Constructor functions
 id3v2_header* _new_header();
-id3v2_frame* id3v2_new_frame(id3v2_tag *tag);
+id3v2_frame* id3v2_new_frame(id3v2_tag *tag, int type);
 id3v2_tag* id3v2_new_tag();
 
 #endif

@@ -16,7 +16,7 @@
 
 id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
 {
-    id3v2_frame* frame = id3v2_new_frame(tag);
+    id3v2_frame* frame = id3v2_new_frame(tag, ID3V2_UNDEFINED_FRAME);
     int offset = 0;
     int version = id3v2_get_tag_version(tag);
     
@@ -433,6 +433,77 @@ void id3v2_get_id_from_frame(id3v2_frame *frame, char **id, int *size)
     *size = ID3V2_FRAME_ID2;
   else
     *size = ID3V2_FRAME_ID;
+
+  E_SUCCESS;
+
+}
+
+void id3v2_initialize_frame(id3v2_frame *frame, int type)
+{
+  char *data;
+  int size;
+
+  switch(type)
+  {
+    case ID3V2_UNDEFINED_FRAME:
+      size = ID3V2_FRAME_ENCODING + 1;
+      memset(frame->id, '\0', ID3V2_FRAME_ID);
+      data=(char*)malloc(size*sizeof(char));
+      if(data == NULL)
+      {
+        E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+        return;
+      }
+      memset(data, 0, 2);
+      break;
+    case ID3V2_TEXT_FRAME:
+      frame->id[0] = 'T';
+      size = ID3V2_FRAME_ENCODING + 1;
+      data=(char*)malloc(size*sizeof(char));
+      if(data == NULL)
+      {
+        E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+        return;
+      }
+      memset(data, 0, 2);
+      break;
+    case ID3V2_COMMENT_FRAME:
+      frame->id[0] = 'C';
+      size = ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE +2;
+      data=(char*)malloc(size*sizeof(char));
+      if(data == NULL)
+      {
+        E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+        return;
+      }
+      data[0] = ID3V2_ISO_ENCODING;
+      memcpy(data+ID3V2_FRAME_ENCODING, "eng", ID3V2_FRAME_LANGUAGE);
+      memset(data+ID3V2_FRAME_ENCODING+ID3V2_FRAME_LANGUAGE, 0, 2);
+      break;
+    case ID3V2_APIC_FRAME:
+      memcpy(frame->id, ID3V2_ALBUM_COVER_FRAME_ID(frame->version), ID3V2_DECIDE_FRAME(frame->version, ID3V2_FRAME_ID2, ID3V2_FRAME_ID));
+      size = ID3V2_FRAME_ENCODING + ID3V2_DECIDE_FRAME(frame->version, 3, 10) +3;
+      data=(char*)malloc(size*sizeof(char));
+      if(data == NULL)
+      {
+        E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+        return;
+      }
+      data[0] = ID3V2_ISO_ENCODING;
+      memcpy(data+ID3V2_FRAME_ENCODING, ID3V2_DECIDE_FRAME(frame->version, "jpg", "image/jpg\0"), ID3V2_DECIDE_FRAME(frame->version, 3, 10));
+      memset(data+ID3V2_DECIDE_FRAME(frame->version, 3, 10), 0, 3);
+      break;
+    default:
+      E_FAIL(ID3V2_ERROR_UNSUPPORTED);
+      return;
+  }
+
+  if(frame->data != NULL)
+    free(frame->data);
+
+  frame->size = size;
+  frame->data = data;
+  memset(frame->flags, 0, ID3V2_FRAME_FLAGS);
 
   E_SUCCESS;
 
