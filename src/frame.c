@@ -1,4 +1,4 @@
-/*
+	/*
  * This file is part of the id3v2lib library
  *
  * Copyright (c) 2013, Lorenzo Ruiz
@@ -24,7 +24,7 @@ id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
       return NULL;
 
     // Parse frame header
-    memcpy(frame->id, bytes + offset, (version==ID3V2_2 ? ID3V2_FRAME_SIZE2 : ID3V2_FRAME_ID));
+    memcpy(frame->id, bytes + offset, ID3V2_DECIDE_FRAME(version, ID3V2_FRAME_SIZE2, ID3V2_FRAME_ID));
 
     if(version==ID3V2_2)
       // fill the remaining space with emptyness
@@ -93,9 +93,6 @@ id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes)
 
     memcpy(frame->data, bytes + offset, frame->size);
     
-    // the frame was successfully parsed
-    frame->parsed = 1;
-
     return frame;
 }
 
@@ -286,7 +283,7 @@ void id3v2_get_text_from_frame(id3v2_frame *frame, char **text, int *size, char 
       *size = frame->size - offset;
       break;
     case ID3V2_APIC_FRAME:
-      offset += (frame->version == ID3V2_2 ? 3 : _get_mime_type_size_from_buffer(frame->data + offset));
+      offset += ID3V2_DECIDE_FRAME(frame->version, 3, _get_mime_type_size_from_buffer(frame->data + offset));
       offset += 2; // 1 remaining mime type byte and 1 byte picture type
       *text = frame->data + offset;
       if (*encoding == ID3V2_UTF_16_ENCODING_WITH_BOM || *encoding==ID3V2_UTF_16_ENCODING_WITHOUT_BOM)
@@ -357,7 +354,7 @@ void id3v2_get_descriptor_from_frame(id3v2_frame *frame, char **descriptor, int 
         *size = 1;
       break;
     case ID3V2_APIC_FRAME:
-      offset += (frame->version == ID3V2_2 ? 3 : _get_mime_type_size_from_buffer(frame->data + offset)) + 1;
+      offset += ID3V2_DECIDE_FRAME(frame->version, 3, _get_mime_type_size_from_buffer(frame->data + offset)) + 1;
       *descriptor = frame->data + offset;
       *size = 1;
       break;
@@ -384,7 +381,7 @@ void id3v2_get_mime_type_from_frame(id3v2_frame *frame, char **mime_type, int *s
 
   *mime_type = frame->data + offset;
 
-  *size = (frame->version == ID3V2_2 ? 3 : _get_mime_type_size_from_buffer(frame->data + offset));
+  *size = ID3V2_DECIDE_FRAME(frame->version, 3, _get_mime_type_size_from_buffer(frame->data + offset));
 
   E_SUCCESS;
 
@@ -490,7 +487,7 @@ void id3v2_initialize_frame(id3v2_frame *frame, int type)
         return;
       }
       data[0] = ID3V2_ISO_ENCODING;
-      memcpy(data+ID3V2_FRAME_ENCODING, ID3V2_DECIDE_FRAME(frame->version, "jpg", "image/jpg\0"), ID3V2_DECIDE_FRAME(frame->version, 3, 10));
+      memcpy(data+ID3V2_FRAME_ENCODING, ID3V2_DECIDE_FRAME(frame->version, "png", "image/png\0"), ID3V2_DECIDE_FRAME(frame->version, 3, 10));
       memset(data+ID3V2_DECIDE_FRAME(frame->version, 3, 10), 0, 3);
       break;
     default:
@@ -504,6 +501,141 @@ void id3v2_initialize_frame(id3v2_frame *frame, int type)
   frame->size = size;
   frame->data = data;
   memset(frame->flags, 0, ID3V2_FRAME_FLAGS);
+
+  E_SUCCESS;
+
+}
+
+void id3v2_set_text_to_frame(id3v2_frame *frame, char *text, int size, char encoding)
+{
+  char *data;
+  int f_size;
+  char original_encoding;
+  int original_size;
+  char *original_text;
+
+  if(encoding != ID3V2_ISO_ENCODING &&
+     encoding != ID3V2_UTF_16_ENCODING_WITH_BOM &&
+     encoding != ID3V2_UTF_16_ENCODING_WITHOUT_BOM &&
+     encoding != ID3V2_UTF_8_ENCODING)
+    {
+      E_FAIL(ID3V2_ERROR_WRONG_ENCODING);
+      return;
+    }
+
+  if(frame->version == ID3V2_3 && encoding == ID3V2_UTF_8_ENCODING)
+  {
+    E_FAIL(ID3V2_ERROR_WRONG_ENCODING);
+    return;
+  }
+
+  if(frame->version == ID3V2_2 && (
+     encoding != ID3V2_ISO_ENCODING &&
+     encoding != ID3V2_UTF_16_ENCODING_WITH_BOM))
+  {
+    E_FAIL(ID3V2_ERROR_WRONG_ENCODING);
+    return;
+  }
+
+  switch(id3v2_get_frame_type(frame))
+  {
+    case ID3V2_TEXT_FRAME:
+      f_size = size + ID3V2_FRAME_ENCODING;
+      data=(char*)malloc(f_size*sizeof(char));
+      if(data == NULL)
+      {
+        E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+        return;
+      }
+      memcpy(data+ID3V2_FRAME_ENCODING, text, size);
+      break;
+    case ID3V2_COMMENT_FRAME:
+      f_size = ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE + size;
+      if(encoding == ID3V2_UTF_16_ENCODING_WITH_BOM)
+        f_size += 4;
+      else if(encoding == ID3V2_UTF_16_ENCODING_WITHOUT_BOM)
+        f_size += 2;
+      else
+        f_size++;
+      data=(char*)malloc(f_size * sizeof(char));
+      if(data == NULL)
+      {
+        E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+        return;
+      }
+      memcpy(data, frame->data, ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE);
+      data[0] = encoding;
+      switch(frame->data[0])
+      {
+        case ID3V2_ISO_ENCODING:
+        case ID3V2_UTF_8_ENCODING:
+          if(encoding == ID3V2_ISO_ENCODING ||
+             encoding == ID3V2_UTF_8_ENCODING)
+            data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE] = frame->data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE];
+          else if(encoding == ID3V2_UTF_16_ENCODING_WITH_BOM)
+          {
+            data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE] = 0xFF;
+            data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE + 1] = 0xFE;
+            data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE + 2] = frame->data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE];
+            data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE + 3] = 0;
+          }
+          else if(encoding == ID3V2_UTF_16_ENCODING_WITHOUT_BOM)
+          {
+            data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE] = frame->data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE];
+            data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE + 1] = 0;
+          }
+          break;
+        case ID3V2_UTF_16_ENCODING_WITH_BOM:
+          if(encoding == ID3V2_ISO_ENCODING ||
+             encoding == ID3V2_UTF_8_ENCODING)
+            data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE] = frame->data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE + 2];
+          else if(encoding == ID3V2_UTF_16_ENCODING_WITH_BOM)
+            memcpy(data+ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE, frame->data + ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE, 4);
+          else if(encoding == ID3V2_UTF_16_ENCODING_WITHOUT_BOM)
+            memcpy(data+ID3V2_FRAME_ENCODING+ID3V2_FRAME_LANGUAGE, frame->data+ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE + 2, 2);
+          break;
+        case ID3V2_UTF_16_ENCODING_WITHOUT_BOM:
+          if(encoding == ID3V2_ISO_ENCODING ||
+             encoding == ID3V2_UTF_8_ENCODING)
+            data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE] = frame->data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE];
+          else if(encoding == ID3V2_UTF_16_ENCODING_WITH_BOM)
+          {
+            data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE] = 0xFF;
+            data[ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE + 1] = 0xFE;
+            memcpy(data+ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE + 2, frame->data+ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE, 2);
+          }
+          else if(encoding == ID3V2_UTF_16_ENCODING_WITHOUT_BOM)
+            memcpy(data+ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE, frame->data + ID3V2_FRAME_ENCODING + ID3V2_FRAME_LANGUAGE, 2);
+          break;
+      }
+      memcpy(data+(f_size-size), text, size);
+      break;
+    case ID3V2_APIC_FRAME:
+      id3v2_get_text_from_frame(frame, &original_text, &original_size, &original_encoding);
+      if(E_GET != ID3V2_OK)
+        return;
+      f_size = ID3V2_FRAME_ENCODING + (original_text - frame->data) + ((frame->data + frame->size) - (original_text + original_size));
+      data=(char*)malloc(f_size * sizeof(char));
+      if(data == NULL)
+      {
+        E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+        return;
+      }
+      memcpy(data, frame->data, original_text - frame->data);
+      memcpy(data+(original_text - frame->data), text, size);
+      memcpy(data+(original_text - frame->data)+size, original_text + original_size, (frame->data + frame->size) - (original_text + original_size));
+      data[0] = encoding;
+      break;
+    default:
+      E_FAIL(ID3V2_ERROR_UNSUPPORTED);
+      return;
+  }
+
+  frame->size = f_size;
+  if(frame->data != NULL)
+    free(frame->data);
+
+  frame->data = data;
 
   E_SUCCESS;
 

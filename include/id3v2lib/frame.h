@@ -26,5 +26,6 @@ void id3v2_get_mime_type_from_frame(id3v2_frame *frame, char **mime_type, int *s
 void id3v2_get_picture_from_frame(id3v2_frame *frame, char **picture, int *size);
 void id3v2_get_text_from_frame(id3v2_frame *frame, char **text, int *size, char *encoding);
 void id3v2_initialize_frame(id3v2_frame *frame, int type);
+void id3v2_set_text_to_frame(id3v2_frame *frame, char *text, int size, char encoding);
 
 #endif
