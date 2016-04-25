@@ -10,14 +10,6 @@
 #ifndef id3v2lib_utils_h
 #define id3v2lib_utils_h
 
-// this piece of code makes this header usable under MSVC
-// without downloading msinttypes
-#ifndef _MSC_VER
-  #include <inttypes.h>
-#else
-  typedef unsigned short uint16_t;
-#endif
-
 #include "types.h"
 
 unsigned int btoi(char* bytes, int size, int offset);
@@ -29,8 +21,5 @@ char* get_mime_type_from_filename(const char* filename);
 
 // String functions
 int has_bom(char *string);
-uint16_t* char_to_utf16(char* string, int size);
-void println_utf16(uint16_t* string, int size);
-char* get_path_to_file(const char* file);
 
 #endif
