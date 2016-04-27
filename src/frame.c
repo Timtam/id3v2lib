@@ -127,18 +127,6 @@ int id3v2_get_frame_type(id3v2_frame *frame)
     }
 }
 
-int _get_mime_type_size_from_buffer(char* data)
-{
-    int i =0;
-
-    while(data[i] != '\0')
-    {
-        i++;
-    }
-    
-    return i;
-}
-
 void id3v2_add_frame_to_tag(id3v2_tag *tag, id3v2_frame *frame)
 {
   id3v2_frame *last_frame;
@@ -283,7 +271,7 @@ void id3v2_get_text_from_frame(id3v2_frame *frame, char **text, int *size, char 
       *size = frame->size - offset;
       break;
     case ID3V2_APIC_FRAME:
-      offset += ID3V2_DECIDE_FRAME(frame->version, 3, _get_mime_type_size_from_buffer(frame->data + offset));
+      offset += ID3V2_DECIDE_FRAME(frame->version, 3, strlen(frame->data + offset));
       offset += 2; // 1 remaining mime type byte and 1 byte picture type
       *text = frame->data + offset;
       if (*encoding == ID3V2_UTF_16_ENCODING_WITH_BOM || *encoding==ID3V2_UTF_16_ENCODING_WITHOUT_BOM)
@@ -354,7 +342,7 @@ void id3v2_get_descriptor_from_frame(id3v2_frame *frame, char **descriptor, int 
         *size = 1;
       break;
     case ID3V2_APIC_FRAME:
-      offset += ID3V2_DECIDE_FRAME(frame->version, 3, _get_mime_type_size_from_buffer(frame->data + offset)) + 1;
+      offset += ID3V2_DECIDE_FRAME(frame->version, 3, strlen(frame->data + offset)) + 1;
       *descriptor = frame->data + offset;
       *size = 1;
       break;
@@ -363,31 +351,7 @@ void id3v2_get_descriptor_from_frame(id3v2_frame *frame, char **descriptor, int 
   }
 }
 
-void id3v2_get_mime_type_from_frame(id3v2_frame *frame, char **mime_type, int *size)
-{
-  int offset = ID3V2_FRAME_ENCODING;
-
-  if(frame == NULL)
-  {
-    E_FAIL(ID3V2_ERROR_NOT_FOUND);
-    return;
-  }
-
-  if(id3v2_get_frame_type(frame)!=ID3V2_APIC_FRAME)
-  {
-    E_FAIL(ID3V2_ERROR_UNSUPPORTED);
-    return;
-  }
-
-  *mime_type = frame->data + offset;
-
-  *size = ID3V2_DECIDE_FRAME(frame->version, 3, _get_mime_type_size_from_buffer(frame->data + offset));
-
-  E_SUCCESS;
-
-}
-
-void id3v2_get_picture_from_frame(id3v2_frame *frame, char **picture, int *size)
+void id3v2_get_picture_from_frame(id3v2_frame *frame, char **picture, int *size, char **mime_type)
 {
   char *description;
   int description_size;
@@ -410,6 +374,8 @@ void id3v2_get_picture_from_frame(id3v2_frame *frame, char **picture, int *size)
   *picture = description + description_size;
 
   *size = (frame->data + frame->size) - (*picture);
+
+  *mime_type = frame->data + ID3V2_FRAME_ENCODING;
 
   E_SUCCESS;
 
@@ -639,4 +605,36 @@ void id3v2_set_text_to_frame(id3v2_frame *frame, char *text, int size, char enco
 
   E_SUCCESS;
 
+}
+
+void id3v2_set_language_to_frame(id3v2_frame *frame, char *language)
+{
+  if(frame == NULL)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return;
+  }
+
+  if(id3v2_get_frame_type(frame)!=ID3V2_COMMENT_FRAME)
+  {
+    E_FAIL(ID3V2_ERROR_UNSUPPORTED);
+    return;
+  }
+
+  memcpy(frame->data+ID3V2_FRAME_ENCODING, language, 3);
+
+  E_SUCCESS;
+}
+
+void id3v2_set_id_to_frame(id3v2_frame *frame, char *id)
+{
+  if(frame == NULL)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return;
+  }
+
+  memcpy(frame->id, id, ID3V2_DECIDE_FRAME(frame->version, 3, 4));
+
+  E_SUCCESS;
 }
