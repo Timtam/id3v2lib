@@ -76,6 +76,7 @@ int syncint_decode(int value)
 void id3v2_free_tag(id3v2_tag* tag)
 {
     id3v2_frame *frame;
+    int i;
     id3v2_frame *next_frame;
 
     free(tag->header);
@@ -87,6 +88,12 @@ void id3v2_free_tag(id3v2_tag* tag)
         free(frame);
         frame=next_frame;
     }
+
+    for(i=0;i<tag->allocation_count;i++)
+      free(tag->allocations[i]);
+
+    free(tag->allocations);
+
     free(tag);
 
     E_SUCCESS;

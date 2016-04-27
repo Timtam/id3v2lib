@@ -39,6 +39,8 @@ typedef struct
 {
     id3v2_header* header;
     id3v2_frame *frame;
+    void **allocations;
+    int allocation_count;
 } id3v2_tag;
 
 // Constructor functions

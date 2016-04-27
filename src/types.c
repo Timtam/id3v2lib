@@ -34,6 +34,9 @@ id3v2_tag* id3v2_new_tag()
 
     tag->frame = NULL;
 
+    tag->allocations = NULL;
+    tag->allocation_count = 0;
+
     E_SUCCESS;
 
     return tag;

@@ -742,3 +742,31 @@ void tag_set_album_cover_from_bytes(char* album_cover_bytes, char* mimetype, int
     set_album_cover_frame(album_cover_bytes, mimetype, picture_size, album_cover_frame);
 }
 */
+
+int _add_allocation_to_tag(id3v2_tag *tag, void *allocation)
+{
+  if(tag == NULL)
+    return 0;
+
+  if(tag->allocation_count == 0)
+  {
+    tag->allocations = (void**)malloc(sizeof(void*));
+    if(tag->allocations == NULL)
+      return 0;
+  }
+  else
+  {
+    tag->allocations = (void**)realloc(tag->allocations, (tag->allocation_count+1)*sizeof(void*));
+    if(tag->allocations == NULL)
+    {
+      tag->allocation_count = 0;
+      return 0;
+    }
+  }
+
+  tag->allocations[tag->allocation_count] = allocation;
+
+  tag->allocation_count++;
+
+  return 1;
+}
