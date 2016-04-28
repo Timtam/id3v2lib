@@ -34,9 +34,6 @@ id3v2_tag* id3v2_new_tag()
 
     tag->frame = NULL;
 
-    tag->allocations = NULL;
-    tag->allocation_count = 0;
-
     E_SUCCESS;
 
     return tag;
@@ -68,6 +65,9 @@ id3v2_frame* id3v2_new_frame(id3v2_tag *tag, int type)
     }
 
     frame->next = NULL;
+
+    frame->allocations = NULL;
+    frame->allocation_count = 0;
 
     frame->version = id3v2_get_tag_version(tag);
 

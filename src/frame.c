@@ -297,34 +297,34 @@ void id3v2_get_text_from_frame(id3v2_frame *frame, char **text, int *size, char 
   }
 }
 
-void id3v2_get_language_from_frame(id3v2_frame *frame, char **language)
+char *id3v2_get_language_from_frame(id3v2_frame *frame)
 {
   if(frame==NULL)
   {
     E_FAIL(ID3V2_ERROR_NOT_FOUND);
-    return;
+    return NULL;
   }
 
   if(id3v2_get_frame_type(frame)!=ID3V2_COMMENT_FRAME)
   {
     E_FAIL(ID3V2_ERROR_UNSUPPORTED);
-    return;
+    return NULL;
   }
-
-  *language = frame->data + ID3V2_FRAME_ENCODING;
 
   E_SUCCESS;
 
+  return frame->data + ID3V2_FRAME_ENCODING;
+
 }
 
-void id3v2_get_descriptor_from_frame(id3v2_frame *frame, char **descriptor, int *size)
+char id3v2_get_descriptor_from_frame(id3v2_frame *frame)
 {
   int offset = ID3V2_FRAME_ENCODING;
 
   if(frame == NULL)
   {
     E_FAIL(ID3V2_ERROR_NOT_FOUND);
-    return;
+    return 0;
   }
 
   E_SUCCESS;
@@ -333,21 +333,15 @@ void id3v2_get_descriptor_from_frame(id3v2_frame *frame, char **descriptor, int 
   {
     case ID3V2_COMMENT_FRAME:
       offset += ID3V2_FRAME_LANGUAGE;
-      *descriptor = frame->data + offset;
-      if(frame->data[0]==ID3V2_UTF_16_ENCODING_WITH_BOM)
-        *size = 4;
-      else if(frame->data[0] == ID3V2_UTF_16_ENCODING_WITHOUT_BOM)
-        *size = 2;
-      else
-        *size = 1;
-      break;
+      if(has_bom(frame->data + offset))
+        offset += 2;
+      return frame->data[offset];
     case ID3V2_APIC_FRAME:
-      offset += ID3V2_DECIDE_FRAME(frame->version, 3, strlen(frame->data + offset)) + 1;
-      *descriptor = frame->data + offset;
-      *size = 1;
-      break;
+      offset += ID3V2_DECIDE_FRAME(frame->version, 3, strlen(frame->data + offset) + 1);
+      return frame->data[offset];
     default:
       E_FAIL(ID3V2_ERROR_UNSUPPORTED);    
+      return 0;
   }
 }
 
@@ -356,6 +350,7 @@ void id3v2_get_picture_from_frame(id3v2_frame *frame, char **picture, int *size,
   char *description;
   int description_size;
   char encoding;
+  char *mime_type_buffer;
 
   if(frame == NULL)
   {
@@ -375,7 +370,26 @@ void id3v2_get_picture_from_frame(id3v2_frame *frame, char **picture, int *size,
 
   *size = (frame->data + frame->size) - (*picture);
 
-  *mime_type = frame->data + ID3V2_FRAME_ENCODING;
+  if(frame->version == ID3V2_2)
+  {
+    mime_type_buffer=(char*)malloc(4*sizeof(char));
+    if(mime_type_buffer == NULL)
+    {
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+      *size = 0;
+      return;
+    }
+    if(_add_allocation_to_frame(frame, mime_type_buffer)==0)
+    {
+      E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+      return;
+    }
+    memcpy(mime_type_buffer, frame->data+ ID3V2_FRAME_ENCODING, 3);
+    mime_type_buffer[3] = '\0';
+    *mime_type = mime_type_buffer;
+  }
+  else
+    *mime_type = frame->data + ID3V2_FRAME_ENCODING;
 
   E_SUCCESS;
 
@@ -634,7 +648,83 @@ void id3v2_set_id_to_frame(id3v2_frame *frame, char *id)
     return;
   }
 
-  memcpy(frame->id, id, ID3V2_DECIDE_FRAME(frame->version, 3, 4));
+  memcpy(frame->id, id, ID3V2_DECIDE_FRAME(frame->version, ID3V2_FRAME_ID2, ID3V2_FRAME_ID));
 
   E_SUCCESS;
+}
+
+void id3v2_set_descriptor_to_frame(id3v2_frame *frame, char descriptor)
+{
+  int offset = ID3V2_FRAME_ENCODING;
+
+  if(frame == NULL)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return;
+  }
+
+  E_SUCCESS;
+
+  switch(id3v2_get_frame_type(frame))
+  {
+    case ID3V2_APIC_FRAME:
+      offset += ID3V2_DECIDE_FRAME(frame->version, 3, strlen(frame->data + offset) + 1);
+      frame->data[offset] = descriptor;
+      break;
+    case ID3V2_COMMENT_FRAME:
+      offset += ID3V2_FRAME_LANGUAGE;
+      if(has_bom(frame->data + offset))
+        offset += 2;
+      frame->data[offset] = descriptor;
+      if(frame->data[0] != ID3V2_UTF_8_ENCODING &&
+         frame->data[0] != ID3V2_ISO_ENCODING)      
+        frame->data[offset + 1] = 0;
+      break;
+    default:
+      E_FAIL(ID3V2_ERROR_UNSUPPORTED);
+  }
+}
+
+int _add_allocation_to_frame(id3v2_frame *frame, void *allocation)
+{
+  if(frame == NULL)
+    return 0;
+
+  if(frame->allocation_count == 0)
+  {
+    frame->allocations = (void**)malloc(sizeof(void*));
+    if(frame->allocations == NULL)
+      return 0;
+  }
+  else
+  {
+    frame->allocations = (void**)realloc(frame->allocations, (frame->allocation_count+1)*sizeof(void*));
+    if(frame->allocations == NULL)
+    {
+      frame->allocation_count = 0;
+      return 0;
+    }
+  }
+
+  frame->allocations[frame->allocation_count] = allocation;
+
+  frame->allocation_count++;
+
+  return 1;
+}
+
+void _free_frame(id3v2_frame *frame)
+{
+  int i;
+
+  if(frame == NULL)
+    return;
+
+  free(frame->data);
+
+  for(i=0;i<frame->allocation_count;i++)
+    free(frame->allocations[i]);
+
+  free(frame->allocations);
+  free(frame);
 }
