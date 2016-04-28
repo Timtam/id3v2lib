@@ -458,7 +458,7 @@ void id3v2_initialize_frame(id3v2_frame *frame, int type)
       memset(data+ID3V2_FRAME_ENCODING+ID3V2_FRAME_LANGUAGE, 0, 2);
       break;
     case ID3V2_APIC_FRAME:
-      memcpy(frame->id, ID3V2_ALBUM_COVER_FRAME_ID(frame->version), ID3V2_DECIDE_FRAME(frame->version, ID3V2_FRAME_ID2, ID3V2_FRAME_ID));
+      memcpy(frame->id, ID3V2_GET_ALBUM_COVER_FRAME_ID_FROM_TAG(frame->tag), ID3V2_DECIDE_FRAME(frame->version, ID3V2_FRAME_ID2, ID3V2_FRAME_ID));
       size = ID3V2_FRAME_ENCODING + ID3V2_DECIDE_FRAME(frame->version, 3, 10) +3;
       data=(char*)malloc(size*sizeof(char));
       if(data == NULL)
@@ -467,7 +467,7 @@ void id3v2_initialize_frame(id3v2_frame *frame, int type)
         return;
       }
       data[0] = ID3V2_ISO_ENCODING;
-      memcpy(data+ID3V2_FRAME_ENCODING, ID3V2_DECIDE_FRAME(frame->version, "png", "image/png\0"), ID3V2_DECIDE_FRAME(frame->version, 3, 10));
+      memcpy(data+ID3V2_FRAME_ENCODING, ID3V2_GET_PNG_MIME_TYPE_FROM_FRAME(frame), ID3V2_DECIDE_FRAME(frame->version, 3, 10));
       memset(data+ID3V2_DECIDE_FRAME(frame->version, 3, 10), 0, 3);
       break;
     default:

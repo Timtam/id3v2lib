@@ -13,6 +13,7 @@
 #include "constants.h"
 
 typedef struct id3v2_frame id3v2_frame;
+typedef struct id3v2_tag id3v2_tag;
 
 typedef struct
 {
@@ -35,13 +36,14 @@ struct id3v2_frame
     char parsed; // indicates if the frame could be successfully parsed or not
     void **allocations;
     int allocation_count;
+    id3v2_tag *tag;
 };
 
-typedef struct
+struct id3v2_tag
 {
     id3v2_header* header;
     id3v2_frame *frame;
-} id3v2_tag;
+};
 
 // Constructor functions
 id3v2_header* _new_header();

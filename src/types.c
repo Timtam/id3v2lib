@@ -73,6 +73,7 @@ id3v2_frame* id3v2_new_frame(id3v2_tag *tag, int type)
 
     frame->parsed = 1;
 
+    frame->tag = tag;
     id3v2_initialize_frame(frame, type);
 
     if(E_GET != ID3V2_OK)

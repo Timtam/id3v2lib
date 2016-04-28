@@ -17,7 +17,6 @@ char* itob(int integer);
 int syncint_encode(int value);
 int syncint_decode(int value);
 void id3v2_free_tag(id3v2_tag* tag);
-char* get_mime_type_from_filename(const char* filename);
 
 // String functions
 int has_bom(char *string);

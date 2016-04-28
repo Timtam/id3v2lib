@@ -93,18 +93,6 @@ void id3v2_free_tag(id3v2_tag* tag)
     
 }
 
-char* get_mime_type_from_filename(const char* filename)
-{
-    if(strcmp(strrchr(filename, '.') + 1, "png") == 0)
-    {
-        return ID3V2_PNG_MIME_TYPE;
-    }
-    else
-    {
-        return ID3V2_JPG_MIME_TYPE;
-    }
-}
-
 // String functions
 int has_bom(char *string)
 {

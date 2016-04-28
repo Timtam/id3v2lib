@@ -434,7 +434,7 @@ id3v2_frame* id3v2_get_title_frame_from_tag(id3v2_tag* tag)
         return NULL;
     }
 
-    return id3v2_get_frame_from_tag(tag, ID3V2_TITLE_FRAME_ID(id3v2_get_tag_version(tag)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_GET_TITLE_FRAME_ID_FROM_TAG(tag));
 }
 
 id3v2_frame* id3v2_get_artist_frame_from_tag(id3v2_tag* tag)
@@ -445,7 +445,7 @@ id3v2_frame* id3v2_get_artist_frame_from_tag(id3v2_tag* tag)
         return NULL;
     }
 
-    return id3v2_get_frame_from_tag(tag, ID3V2_ARTIST_FRAME_ID(id3v2_get_tag_version(tag)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_GET_ARTIST_FRAME_ID_FROM_TAG(tag));
 }
 
 id3v2_frame* id3v2_get_album_frame_from_tag(id3v2_tag* tag)
@@ -456,7 +456,7 @@ id3v2_frame* id3v2_get_album_frame_from_tag(id3v2_tag* tag)
         return NULL;
     }
 
-    return id3v2_get_frame_from_tag(tag, ID3V2_ALBUM_FRAME_ID(id3v2_get_tag_version(tag)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_GET_ALBUM_FRAME_ID_FROM_TAG(tag));
 }
 
 id3v2_frame* id3v2_get_album_artist_frame_from_tag(id3v2_tag* tag)
@@ -467,7 +467,7 @@ id3v2_frame* id3v2_get_album_artist_frame_from_tag(id3v2_tag* tag)
         return NULL;
     }
 
-    return id3v2_get_frame_from_tag(tag, ID3V2_ALBUM_ARTIST_FRAME_ID(id3v2_get_tag_version(tag)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_GET_ALBUM_ARTIST_FRAME_ID_FROM_TAG(tag));
 }
 
 id3v2_frame* id3v2_get_genre_frame_from_tag(id3v2_tag* tag)
@@ -478,7 +478,7 @@ id3v2_frame* id3v2_get_genre_frame_from_tag(id3v2_tag* tag)
         return NULL;
     }
 
-    return id3v2_get_frame_from_tag(tag, ID3V2_GENRE_FRAME_ID(id3v2_get_tag_version(tag)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_GET_GENRE_FRAME_ID_FROM_TAG(tag));
 }
 
 id3v2_frame* id3v2_get_track_frame_from_tag(id3v2_tag* tag)
@@ -489,7 +489,7 @@ id3v2_frame* id3v2_get_track_frame_from_tag(id3v2_tag* tag)
         return NULL;
     }
 
-    return id3v2_get_frame_from_tag(tag, ID3V2_TRACK_FRAME_ID(id3v2_get_tag_version(tag)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_GET_TRACK_FRAME_ID_FROM_TAG(tag));
 }
 
 id3v2_frame* id3v2_get_year_frame_from_tag(id3v2_tag* tag)
@@ -500,7 +500,7 @@ id3v2_frame* id3v2_get_year_frame_from_tag(id3v2_tag* tag)
         return NULL;
     }
 
-    return id3v2_get_frame_from_tag(tag, ID3V2_YEAR_FRAME_ID(id3v2_get_tag_version(tag)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_GET_YEAR_FRAME_ID_FROM_TAG(tag));
 }
 
 id3v2_frame* id3v2_get_comment_frame_from_tag(id3v2_tag* tag)
@@ -511,7 +511,7 @@ id3v2_frame* id3v2_get_comment_frame_from_tag(id3v2_tag* tag)
         return NULL;
     }
 
-    return id3v2_get_frame_from_tag(tag, ID3V2_COMMENT_FRAME_ID(id3v2_get_tag_version(tag)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_GET_COMMENT_FRAME_ID_FROM_TAG(tag));
 }
 
 id3v2_frame* id3v2_get_disc_number_frame_from_tag(id3v2_tag* tag)
@@ -522,7 +522,7 @@ id3v2_frame* id3v2_get_disc_number_frame_from_tag(id3v2_tag* tag)
         return NULL;
     }
 
-    return id3v2_get_frame_from_tag(tag, ID3V2_DISC_NUMBER_FRAME_ID(id3v2_get_tag_version(tag)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_GET_DISC_NUMBER_FRAME_ID_FROM_TAG(tag));
 }
 
 id3v2_frame* id3v2_get_composer_frame_from_tag(id3v2_tag* tag)
@@ -533,7 +533,7 @@ id3v2_frame* id3v2_get_composer_frame_from_tag(id3v2_tag* tag)
         return NULL;
     }
 
-    return id3v2_get_frame_from_tag(tag, ID3V2_COMPOSER_FRAME_ID(id3v2_get_tag_version(tag)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_GET_COMPOSER_FRAME_ID_FROM_TAG(tag));
 }
 
 id3v2_frame* id3v2_get_album_cover_frame_from_tag(id3v2_tag* tag)
@@ -544,7 +544,7 @@ id3v2_frame* id3v2_get_album_cover_frame_from_tag(id3v2_tag* tag)
         return NULL;
     }
 
-    return id3v2_get_frame_from_tag(tag, ID3V2_ALBUM_COVER_FRAME_ID(id3v2_get_tag_version(tag)));
+    return id3v2_get_frame_from_tag(tag, ID3V2_GET_ALBUM_COVER_FRAME_ID_FROM_TAG(tag));
 }
 
 /**
