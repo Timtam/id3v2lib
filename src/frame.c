@@ -379,7 +379,7 @@ void id3v2_get_picture_from_frame(id3v2_frame *frame, char **picture, int *size,
       *size = 0;
       return;
     }
-    if(_add_allocation_to_frame(frame, mime_type_buffer)==0)
+    if(_add_allocation_to_tag(frame->tag, mime_type_buffer)==0)
     {
       E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
       return;
@@ -685,46 +685,13 @@ void id3v2_set_descriptor_to_frame(id3v2_frame *frame, char descriptor)
   }
 }
 
-int _add_allocation_to_frame(id3v2_frame *frame, void *allocation)
-{
-  if(frame == NULL)
-    return 0;
-
-  if(frame->allocation_count == 0)
-  {
-    frame->allocations = (void**)malloc(sizeof(void*));
-    if(frame->allocations == NULL)
-      return 0;
-  }
-  else
-  {
-    frame->allocations = (void**)realloc(frame->allocations, (frame->allocation_count+1)*sizeof(void*));
-    if(frame->allocations == NULL)
-    {
-      frame->allocation_count = 0;
-      return 0;
-    }
-  }
-
-  frame->allocations[frame->allocation_count] = allocation;
-
-  frame->allocation_count++;
-
-  return 1;
-}
-
 void _free_frame(id3v2_frame *frame)
 {
-  int i;
 
   if(frame == NULL)
     return;
 
   free(frame->data);
 
-  for(i=0;i<frame->allocation_count;i++)
-    free(frame->allocations[i]);
-
-  free(frame->allocations);
   free(frame);
 }

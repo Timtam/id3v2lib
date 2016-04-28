@@ -17,6 +17,7 @@
 #include "id3v2lib/frame.h"
 #include "id3v2lib/utils.h"
 
+int _add_allocation_to_tag(id3v2_tag *tag, void *allocation);
 id3v2_tag* id3v2_load_tag_from_buffer(char* buffer, int length);
 id3v2_tag* id3v2_load_tag_from_file(FILE *file);
 void id3v2_load_tags_from_buffer(char *buffer, int length, id3v2_tag ***tags, int *count);

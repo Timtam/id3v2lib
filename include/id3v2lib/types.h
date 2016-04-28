@@ -34,8 +34,6 @@ struct id3v2_frame
     char* data;
     id3v2_frame *next;
     char parsed; // indicates if the frame could be successfully parsed or not
-    void **allocations;
-    int allocation_count;
     id3v2_tag *tag;
 };
 
@@ -43,6 +41,8 @@ struct id3v2_tag
 {
     id3v2_header* header;
     id3v2_frame *frame;
+    void **allocations;
+    int allocation_count;
 };
 
 // Constructor functions

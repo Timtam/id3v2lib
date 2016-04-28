@@ -66,14 +66,12 @@ id3v2_frame* id3v2_new_frame(id3v2_tag *tag, int type)
 
     frame->next = NULL;
 
-    frame->allocations = NULL;
-    frame->allocation_count = 0;
-
     frame->version = id3v2_get_tag_version(tag);
 
     frame->parsed = 1;
 
     frame->tag = tag;
+
     id3v2_initialize_frame(frame, type);
 
     if(E_GET != ID3V2_OK)

@@ -13,6 +13,34 @@
 
 #include "id3v2lib.h"
 
+int _add_allocation_to_tag(id3v2_tag *tag, void *allocation)
+{
+  if(tag == NULL)
+    return 0;
+
+  if(tag->allocation_count == 0)
+  {
+    tag->allocations = (void**)malloc(sizeof(void*));
+    if(tag->allocations == NULL)
+      return 0;
+  }
+  else
+  {
+    tag->allocations = (void**)realloc(tag->allocations, (tag->allocation_count+1)*sizeof(void*));
+    if(tag->allocations == NULL)
+    {
+      tag->allocation_count = 0;
+      return 0;
+    }
+  }
+
+  tag->allocations[tag->allocation_count] = allocation;
+
+  tag->allocation_count++;
+
+  return 1;
+}
+
 id3v2_tag* id3v2_load_tag_from_file(FILE *file)
 {
     char *buffer;

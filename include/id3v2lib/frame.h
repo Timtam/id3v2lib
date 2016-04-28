@@ -13,7 +13,6 @@
 #include "types.h"
 #include "constants.h"
 
-int _add_allocation_to_frame(id3v2_frame *frame, void *allocation);
 void _free_frame(id3v2_frame *frame);
 id3v2_frame* _parse_frame_from_tag(id3v2_tag *tag, char *bytes);
 void _synchronize_frame(id3v2_frame *frame);
