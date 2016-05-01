@@ -8,7 +8,7 @@ These rules are designed to
 
 EVERYTHING HAS TO BE EITHER LOWERCASE OR UPPERCASE, NOT BOTH AS MIXTURE
 
-All function calls and variables have consequently to be lower case.
+		All function calls and variables have consequently to be lower case.
 All constants, macro and non-macro, have to be consequently upper case.
 
 SEPARATE WORDS IDENTICALLY
@@ -28,6 +28,7 @@ a, b, c or d can also contain several words, in this case they should be devided
 Parts of this naming structuree can be left off or switched if it would otherwise be without sense, e.g. int id3v2_find_bool_in_buffer(char *buffer) doesn't say the same like int id3v2_buffer_has_bom(char *buffer), at least not since it actually doesn't say anything about what it is doing.
 This pattern is only to be used for functions which are ment to be used by the public. Internal functions only can drop the id3v2 prefix and therefore just start with _. the a_b_c_d pattern though should be used here too.
 All external functions and all constants should start with id3v2_ (constants upper case, functions lower case of course).
+Internal functions and constants/macros may drop the ID3V2_ prefix and also the naming scheme, although it should be clear what they're doing.
 
 Variables don't have a specified naming scheme, except the delimiter and that they should explain their purpose on their own.
 
