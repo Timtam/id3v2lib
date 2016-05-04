@@ -372,7 +372,10 @@ void id3v2_get_picture_from_frame(id3v2_frame *frame, char **picture, int *size,
 
   if(frame->version == ID3V2_2)
   {
-    mime_type_buffer=(char*)malloc(4*sizeof(char));
+    if(memcmp(frame->data + ID3V2_FRAME_ENCODING, ID3V2_JPG_MIME_TYPE2, 3)==0)
+      mime_type_buffer=(char*)malloc((strlen(ID3V2_JPG_MIME_TYPE)+1)*sizeof(char));
+    else
+      mime_type_buffer=(char*)malloc((strlen(ID3V2_PNG_MIME_TYPE)+1)*sizeof(char));
     if(mime_type_buffer == NULL)
     {
       E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
@@ -384,8 +387,10 @@ void id3v2_get_picture_from_frame(id3v2_frame *frame, char **picture, int *size,
       E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
       return;
     }
-    memcpy(mime_type_buffer, frame->data+ ID3V2_FRAME_ENCODING, 3);
-    mime_type_buffer[3] = '\0';
+    if(memcmp(frame->data + ID3V2_FRAME_ENCODING, ID3V2_JPG_MIME_TYPE2, 3)==0)
+      memcpy(mime_type_buffer, ID3V2_JPG_MIME_TYPE, strlen(ID3V2_JPG_MIME_TYPE)+1);
+    else
+      memcpy(mime_type_buffer, ID3V2_PNG_MIME_TYPE, strlen(ID3V2_PNG_MIME_TYPE)+1);
     *mime_type = mime_type_buffer;
   }
   else
