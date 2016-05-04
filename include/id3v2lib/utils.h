@@ -12,6 +12,7 @@
 
 #include "types.h"
 
+const char * _get_mime_type_from_buffer(char *data, int size);
 unsigned int btoi(char* bytes, int size, int offset);
 char* itob(int integer);
 int syncint_encode(int value);

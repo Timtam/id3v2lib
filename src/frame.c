@@ -700,3 +700,76 @@ void _free_frame(id3v2_frame *frame)
 
   free(frame);
 }
+
+void id3v2_set_picture_to_frame(id3v2_frame *frame, char *picture, int size)
+{
+  char *data;
+  int n_size=ID3V2_FRAME_ENCODING;
+  char *o_description;
+  char o_encoding;
+  char *o_mime_type;
+  char *o_picture;
+  int o_description_size;
+  int o_picture_size;
+
+  if(frame==NULL)
+  {
+    E_FAIL(ID3V2_ERROR_NOT_FOUND);
+    return;
+  }
+
+  if(id3v2_get_frame_type(frame)!=ID3V2_APIC_FRAME)
+  {
+    E_FAIL(ID3V2_ERROR_UNSUPPORTED);
+    return;
+  }
+
+  if(memcmp(_get_mime_type_from_buffer(picture, size), 0, 1)==0)
+  {
+    E_FAIL(ID3V2_ERROR_UNKNOWN_MIME_TYPE);
+    return;
+  }
+
+  n_size += strlen(_get_mime_type_from_buffer(picture, size))+2;
+  
+  id3v2_get_text_from_frame(frame, &o_description, &o_description_size, &o_encoding);
+
+  if(E_GET != ID3V2_OK)
+    return;
+
+  n_size += o_description_size;
+  n_size += size;
+
+  id3v2_get_picture_from_frame(frame, &o_picture, &o_picture_size, &o_mime_type);
+
+  if(E_GET != ID3V2_OK)
+    return;
+
+  data=(char*)malloc(n_size*sizeof(char));
+
+  if(data==NULL)
+  {
+    E_FAIL(ID3V2_ERROR_MEMORY_ALLOCATION);
+    return;
+  }
+
+  data[0] = o_encoding;
+
+  memcpy(data+ID3V2_FRAME_ENCODING, _get_mime_type_from_buffer(picture, size), n_size - size - 1 - ID3V2_FRAME_ENCODING - o_description_size);
+
+  data[n_size - size - o_description_size - 1] = id3v2_get_descriptor_from_frame(frame);
+
+  memcpy(data + (n_size - size - o_description_size), o_description, o_description_size);
+
+  memcpy(data+(n_size - size), picture, size);
+
+  if(frame->data != NULL)
+    free(frame->data);
+
+  frame->data = data;
+
+  frame->size = n_size;
+
+  E_SUCCESS;
+
+}

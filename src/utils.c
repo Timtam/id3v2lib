@@ -107,3 +107,13 @@ int has_bom(char *string)
     
     return 0;
 }
+
+
+const char *_get_mime_type_from_buffer(char *data, int size)
+{
+  if(data[0]==0xFF && data[1]==0xD8 && data[size-2]==0xFF && data[size-1]==0xD9)
+    return ID3V2_JPG_MIME_TYPE;
+  else if(data[0]==0x89 && data[1]==0x50 && data[2]==0x4E && data[3]==0x47 && data[4]==0x0D && data[5]==0x0A && data[6]==0x1A && data[7]==0x0A)
+    return ID3V2_PNG_MIME_TYPE;
+  return "";
+}

@@ -28,6 +28,7 @@ void id3v2_initialize_frame(id3v2_frame *frame, int type);
 void id3v2_set_descriptor_to_frame(id3v2_frame *frame, char descriptor);
 void id3v2_set_id_to_frame(id3v2_frame *frame, char *id);
 void id3v2_set_language_to_frame(id3v2_frame *frame, char *language);
+void id3v2_set_picture_to_frame(id3v2_frame *frame, char *picture, int size);
 void id3v2_set_text_to_frame(id3v2_frame *frame, char *text, int size, char encoding);
 
 #endif
