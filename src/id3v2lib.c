@@ -291,10 +291,14 @@ id3v2_tag* id3v2_load_tag_from_buffer(char *bytes, int length)
       {
         bytes += frame->size + 10;
         if(frame->parsed) // and it got parsed
+        {
           // detect unsynchronization and reverse it if needed
           if(tag_header->flags&(1<<7)==(1<<7) ||
              frame->flags[1]&(1<<1)==(1<<1))
+          {
             _synchronize_frame(frame);
+          }
+        }
         else
         {
           if(frame->data != NULL)

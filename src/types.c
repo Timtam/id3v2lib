@@ -66,6 +66,8 @@ id3v2_frame* id3v2_new_frame(id3v2_tag *tag, int type)
 
     frame->next = NULL;
 
+    frame->data = NULL;
+
     frame->version = id3v2_get_tag_version(tag);
 
     frame->parsed = 1;
